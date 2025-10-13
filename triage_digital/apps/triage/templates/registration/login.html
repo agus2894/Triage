@@ -1,0 +1,98 @@
+{% extends 'triage/base.html' %}
+
+{% block title %}Login - Triage Digital{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0 text-center">
+                    <i class="bi bi-hospital"></i> Triage Digital
+                </h4>
+                <p class="mb-0 text-center small">Acceso para Profesionales</p>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="dni" class="form-label">
+                            <i class="bi bi-person-badge"></i> DNI del Profesional
+                        </label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="dni" 
+                            name="dni" 
+                            pattern="[0-9]{7,8}"
+                            maxlength="8"
+                            placeholder="12345678"
+                            required
+                            autofocus
+                        >
+                        <div class="invalid-feedback">
+                            Ingrese un DNI válido (7-8 dígitos).
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="bi bi-key"></i> Contraseña
+                        </label>
+                        <input 
+                            type="password" 
+                            class="form-control" 
+                            id="password" 
+                            name="password" 
+                            required
+                        >
+                        <div class="invalid-feedback">
+                            La contraseña es obligatoria.
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Ingresar al Sistema
+                    </button>
+                </form>
+                
+                <hr>
+                <div class="text-center small text-muted">
+                    <p><i class="bi bi-shield-check"></i> Sistema Seguro</p>
+                    <p>Solo para personal médico autorizado</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación de formulario y formato DNI
+(function() {
+    'use strict';
+    
+    // Validación Bootstrap
+    window.addEventListener('load', function() {
+        const forms = document.getElementsByClassName('needs-validation');
+        Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+    
+    // Solo números en DNI
+    document.getElementById('dni').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        e.target.value = value;
+    });
+})();
+</script>
+{% endblock %}

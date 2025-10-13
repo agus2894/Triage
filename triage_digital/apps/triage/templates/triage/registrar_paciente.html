@@ -1,0 +1,120 @@
+{% extends 'triage/base.html' %}
+
+{% block title %}Registro Paciente - Triage Digital{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-person-plus"></i> Registro de Nuevo Paciente</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label">
+                                    Nombre 
+                                    <small class="text-muted">(opcional si paciente inconsciente)</small>
+                                </label>
+                                <input type="text" class="form-control" id="nombre" name="nombre" 
+                                       maxlength="100" autofocus placeholder="Juan Carlos (opcional)">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="apellido" class="form-label">
+                                    Apellido
+                                    <small class="text-muted">(opcional si paciente inconsciente)</small>
+                                </label>
+                                <input type="text" class="form-control" id="apellido" name="apellido" 
+                                       maxlength="100" placeholder="Pérez (opcional)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dni" class="form-label">
+                                    DNI
+                                    <small class="text-muted">(opcional si paciente inconsciente)</small>
+                                </label>
+                                <input type="text" class="form-control" id="dni" name="dni" 
+                                       pattern="[0-9]{7,8}" maxlength="8"
+                                       placeholder="12345678 (opcional)">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edad" class="form-label">
+                                    Edad
+                                    <small class="text-muted">(opcional si paciente inconsciente)</small>
+                                </label>
+                                <input type="number" class="form-control" id="edad" name="edad" 
+                                       min="0" max="120" placeholder="Edad aproximada (opcional)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="motivo_consulta" class="form-label">Motivo de Consulta</label>
+                        <textarea class="form-control" id="motivo_consulta" name="motivo_consulta" 
+                                  rows="3" maxlength="500" 
+                                  placeholder="Descripción breve del motivo de consulta..."></textarea>
+                        <div class="form-text">Opcional - Máximo 500 caracteres</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'triage:dashboard' %}" class="btn btn-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-check"></i> Registrar y Continuar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación HTML5 mejorada
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        const forms = document.getElementsByClassName('needs-validation');
+        Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Validación DNI en tiempo real
+document.getElementById('dni').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    e.target.value = value;
+});
+
+// Auto-mayúsculas para nombres
+document.getElementById('nombre').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\b\w/g, l => l.toUpperCase());
+});
+
+document.getElementById('apellido').addEventListener('input', function(e) {
+    e.target.value = e.target.value.replace(/\b\w/g, l => l.toUpperCase());
+});
+</script>
+{% endblock %}

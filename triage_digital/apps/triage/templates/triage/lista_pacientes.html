@@ -1,0 +1,146 @@
+{% extends "triage/base.html" %}
+
+{% block title %}Lista de Pacientes{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-users"></i> Lista de Pacientes</h2>
+                <div>
+                    <a href="{% url 'triage:registrar_paciente' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Paciente
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros rápidos -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="btn-group" role="group">
+                        <a href="?estado=pendientes" class="btn {% if estado_filtro == 'pendientes' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                            ⏳ Pendientes ({{ total_pendientes }})
+                        </a>
+                        <a href="?estado=atendidos" class="btn {% if estado_filtro == 'atendidos' %}btn-success{% else %}btn-outline-success{% endif %}">
+                            ✅ Atendidos ({{ total_atendidos }})
+                        </a>
+                        <a href="?estado=todos" class="btn {% if estado_filtro == 'todos' %}btn-info{% else %}btn-outline-info{% endif %}">
+                            📋 Todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {% if pacientes %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>DNI</th>
+                                <th>Edad</th>
+                                <th>Tiempo</th>
+                                <th>Triage</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for paciente in pacientes %}
+                            <tr id="paciente-{{ paciente.id }}" {% if paciente.estado_atencion == 'ATENDIDO' %}class="table-light opacity-50"{% endif %}>
+                                <td>
+                                    {{ paciente.nombre_completo }}
+                                    {% if paciente.es_critico %}
+                                        <i class="fas fa-exclamation-triangle text-danger" title="Crítico"></i>
+                                    {% endif %}
+                                </td>
+                                <td>{{ paciente.dni|default:"Sin DNI" }}</td>
+                                <td>{{ paciente.edad|default:"N/A" }}</td>
+                                <td>
+                                    <span class="badge {% if paciente.estado_atencion == 'ESPERANDO' %}bg-warning{% else %}bg-success{% endif %}">
+                                        {{ paciente.tiempo_espera }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if paciente.signos_vitales.first %}
+                                        {% with ultimo_triage=paciente.signos_vitales.first.calcular_puntaje_news %}
+                                            <span class="badge triage-{{ ultimo_triage.categoria|lower }}">
+                                                {{ ultimo_triage.categoria }}
+                                            </span>
+                                        {% endwith %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">Sin evaluar</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if paciente.estado_atencion == 'ATENDIDO' %}bg-success{% elif paciente.estado_atencion == 'EN_ATENCION' %}bg-info{% else %}bg-warning{% endif %}">
+                                        {{ paciente.get_estado_atencion_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if paciente.estado_atencion != 'ATENDIDO' %}
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'triage:cargar_signos' paciente.id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-stethoscope"></i>
+                                            </a>
+                                            <button onclick="marcarAtendido({{ paciente.id }})" class="btn btn-sm btn-success" title="Marcar como atendido">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Completado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    No hay pacientes registrados. 
+                    <a href="{% url 'triage:registrar_paciente' %}" class="alert-link">Registrar el primer paciente</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function marcarAtendido(pacienteId) {
+    if (!confirm('¿Marcar este paciente como atendido?')) return;
+    
+    fetch(`/triage/paciente/${pacienteId}/atendido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar fila visualmente
+            const fila = document.getElementById(`paciente-${pacienteId}`);
+            fila.classList.add('table-light', 'opacity-50');
+            fila.querySelector('td:last-child').innerHTML = '<span class="text-muted">Completado</span>';
+            
+            // Mostrar mensaje
+            alert(data.mensaje);
+            
+            // Recargar página después de 1 segundo
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error de conexión: ' + error);
+    });
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

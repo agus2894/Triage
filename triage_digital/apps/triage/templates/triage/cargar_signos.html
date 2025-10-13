@@ -1,0 +1,243 @@
+{% extends 'triage/base.html' %}
+
+{% block title %}Signos Vitales - {{ paciente.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Info del paciente -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4><i class="bi bi-person-badge"></i> {{ paciente.nombre_completo }}</h4>
+                        <p class="mb-0">
+                            <strong>DNI:</strong> {{ paciente.dni }} | 
+                            <strong>Edad:</strong> {{ paciente.edad }} años |
+                            <strong>Tiempo espera:</strong> {{ paciente.tiempo_espera }}
+                        </p>
+                        {% if paciente.motivo_consulta %}
+                        <small class="text-muted">{{ paciente.motivo_consulta }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge bg-info fs-6">Carga de Signos Vitales</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario signos vitales -->
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5><i class="bi bi-heart-pulse"></i> Signos Vitales - NEWS Score</h5>
+                <small>Complete todos los campos para calcular automáticamente el triage</small>
+            </div>
+            <div class="card-body">
+                <form method="post" class="needs-validation" novalidate id="signosForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- Frecuencia Respiratoria -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="frecuencia_respiratoria" class="form-label">
+                                    <i class="bi bi-lungs"></i> Frecuencia Respiratoria *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="frecuencia_respiratoria" 
+                                           name="frecuencia_respiratoria" required min="1" max="60"
+                                           placeholder="18">
+                                    <span class="input-group-text">resp/min</span>
+                                </div>
+                                <div class="form-text">Normal: 12-20 resp/min</div>
+                                <div class="invalid-feedback">Ingrese entre 1-60 respiraciones por minuto</div>
+                            </div>
+                        </div>
+
+                        <!-- Saturación Oxígeno -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="saturacion_oxigeno" class="form-label">
+                                    <i class="bi bi-droplet"></i> Saturación de Oxígeno *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="saturacion_oxigeno" 
+                                           name="saturacion_oxigeno" required min="50" max="100"
+                                           placeholder="98">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Normal: >95%</div>
+                                <div class="invalid-feedback">Ingrese entre 50-100%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Tensión Sistólica -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="tension_sistolica" class="form-label">
+                                    <i class="bi bi-activity"></i> Tensión Arterial Sistólica *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="tension_sistolica" 
+                                           name="tension_sistolica" required min="50" max="300"
+                                           placeholder="120">
+                                    <span class="input-group-text">mmHg</span>
+                                </div>
+                                <div class="form-text">Normal: 90-140 mmHg</div>
+                                <div class="invalid-feedback">Ingrese entre 50-300 mmHg</div>
+                            </div>
+                        </div>
+
+                        <!-- Frecuencia Cardíaca -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="frecuencia_cardiaca" class="form-label">
+                                    <i class="bi bi-heart"></i> Frecuencia Cardíaca *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="frecuencia_cardiaca" 
+                                           name="frecuencia_cardiaca" required min="20" max="200"
+                                           placeholder="75">
+                                    <span class="input-group-text">lat/min</span>
+                                </div>
+                                <div class="form-text">Normal: 60-100 lat/min</div>
+                                <div class="invalid-feedback">Ingrese entre 20-200 latidos por minuto</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Nivel de Conciencia -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nivel_conciencia" class="form-label">
+                                    <i class="bi bi-brain"></i> Nivel de Conciencia (AVPU) *
+                                </label>
+                                <select class="form-select" id="nivel_conciencia" name="nivel_conciencia" required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for choice in conciencia_choices %}
+                                    <option value="{{ choice.0 }}">{{ choice.0 }} - {{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">A=Alerta, V=Voz, P=Dolor, U=Inconsciente</div>
+                                <div class="invalid-feedback">Seleccione el nivel de conciencia</div>
+                            </div>
+                        </div>
+
+                        <!-- Temperatura -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="temperatura" class="form-label">
+                                    <i class="bi bi-thermometer-half"></i> Temperatura Corporal *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="temperatura" 
+                                           name="temperatura" required min="30.0" max="45.0" step="0.1"
+                                           placeholder="36.8">
+                                    <span class="input-group-text">°C</span>
+                                </div>
+                                <div class="form-text">Normal: 36.1-37.2°C</div>
+                                <div class="invalid-feedback">Ingrese entre 30.0-45.0°C</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alerta de cálculo -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Cálculo Automático:</strong> Al guardar, el sistema calculará automáticamente 
+                        el puntaje NEWS y determinará el nivel de urgencia del paciente.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'triage:dashboard' %}" class="btn btn-secondary me-md-2">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-calculator"></i> <strong>CALCULAR TRIAGE</strong>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validación crítica para datos médicos
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        const forms = document.getElementsByClassName('needs-validation');
+        Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    alert('⚠️ Complete todos los campos correctamente antes de calcular el triage.');
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Validaciones en tiempo real para valores críticos
+document.getElementById('saturacion_oxigeno').addEventListener('input', function(e) {
+    const valor = parseInt(e.target.value);
+    if (valor < 90) {
+        e.target.classList.add('border-danger');
+        e.target.parentNode.classList.add('text-danger');
+    } else {
+        e.target.classList.remove('border-danger');
+        e.target.parentNode.classList.remove('text-danger');
+    }
+});
+
+document.getElementById('tension_sistolica').addEventListener('input', function(e) {
+    const valor = parseInt(e.target.value);
+    if (valor < 90 || valor > 180) {
+        e.target.classList.add('border-warning');
+    } else {
+        e.target.classList.remove('border-warning');
+    }
+});
+
+document.getElementById('frecuencia_cardiaca').addEventListener('input', function(e) {
+    const valor = parseInt(e.target.value);
+    if (valor < 50 || valor > 120) {
+        e.target.classList.add('border-warning');
+    } else {
+        e.target.classList.remove('border-warning');
+    }
+});
+
+// Confirmación para casos críticos potenciales
+document.getElementById('signosForm').addEventListener('submit', function(e) {
+    const sat = parseInt(document.getElementById('saturacion_oxigeno').value);
+    const tas = parseInt(document.getElementById('tension_sistolica').value);
+    const fc = parseInt(document.getElementById('frecuencia_cardiaca').value);
+    
+    let alertas = [];
+    if (sat < 92) alertas.push('Saturación de oxígeno crítica');
+    if (tas < 90) alertas.push('Hipotensión severa');
+    if (fc > 130 || fc < 50) alertas.push('Frecuencia cardíaca anormal');
+    
+    if (alertas.length > 0) {
+        const confirmar = confirm(
+            '⚠️ ALERTA MÉDICA:\n\n' + 
+            alertas.join('\n') + 
+            '\n\n¿Confirma que los valores son correctos?'
+        );
+        if (!confirmar) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'triage/base.html' %}
+
+{% block title %}Dashboard - Triage Digital{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center py-3">
+    <h1><i class="bi bi-speedometer2"></i> Dashboard Médico</h1>
+    <div class="text-end">
+        <small class="text-muted d-block">Última actualización: {{ "now"|date:"H:i:s" }}</small>
+        <small class="badge bg-success">Sistema Optimizado</small>
+    </div>
+</div>
+
+<!-- Alertas críticas -->
+{% if estadisticas.rojos > 0 %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>¡ATENCIÓN!</strong> Hay {{ estadisticas.rojos }} caso{{ estadisticas.rojos|pluralize }} crítico{{ estadisticas.rojos|pluralize }} que requieren atención inmediata.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<!-- Estadísticas críticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <h2 class="text-danger">{{ estadisticas.rojos|default:0 }}</h2>
+                <p class="card-text"><strong>CRÍTICOS</strong></p>
+                <small class="text-muted">Atención inmediata</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <h2 class="text-warning">{{ estadisticas.amarillos|default:0 }}</h2>
+                <p class="card-text"><strong>URGENTES</strong></p>
+                <small class="text-muted">30 min máximo</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h2 class="text-success">{{ estadisticas.verdes|default:0 }}</h2>  
+                <p class="card-text"><strong>RUTINARIOS</strong></p>
+                <small class="text-muted">60 min máximo</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <h2 class="text-info">{{ estadisticas.total|default:0 }}</h2>
+                <p class="card-text"><strong>TOTAL</strong></p>
+                <small class="text-muted">Últimas 24h</small>  
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Casos críticos -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <h5><i class="bi bi-exclamation-triangle"></i> Casos Críticos</h5>
+                <span class="badge bg-danger">{{ casos_criticos|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if casos_criticos %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Paciente</th>
+                                <th>DNI</th>
+                                <th>Urgencia</th>
+                                <th>NEWS</th>
+                                <th>Tiempo</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for caso in casos_criticos %}
+                            <tr class="{% if caso.nivel_urgencia == 'ROJO' %}table-danger urgente{% elif caso.nivel_urgencia == 'AMARILLO' %}table-warning{% endif %}">
+                                <td>
+                                    <strong>{{ caso.signos_vitales.paciente.nombre_completo }}</strong>
+                                    <br><small class="text-muted">{{ caso.signos_vitales.paciente.edad }} años</small>
+                                </td>
+                                <td>{{ caso.signos_vitales.paciente.dni }}</td>
+                                <td>
+                                    <span class="badge triage-{{ caso.nivel_urgencia|lower }}">
+                                        {{ caso.nivel_urgencia }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ caso.news_score }}</strong></td>
+                                <td>
+                                    <small>{{ caso.signos_vitales.paciente.tiempo_espera }}</small>
+                                    <br><span class="text-danger">Max: {{ caso.tiempo_atencion_max }} min</span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'triage:cargar_signos' caso.signos_vitales.paciente.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-heart-pulse"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                    <p>No hay casos críticos pendientes</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pacientes recientes -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-person-plus"></i> Ingresos Recientes</h5>
+            </div>
+            <div class="card-body">
+                {% if pacientes_recientes %}
+                <div class="list-group list-group-flush">
+                    {% for paciente in pacientes_recientes %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ paciente.nombre_completo }}</strong>
+                            <br><small class="text-muted">DNI: {{ paciente.dni }}</small>
+                            <br><small class="text-muted">{{ paciente.fecha_ingreso|timesince }} atrás</small>
+                        </div>
+                        <div>
+                            <a href="{% url 'triage:cargar_signos' paciente.id %}" 
+                               class="btn btn-sm btn-success">
+                                <i class="bi bi-plus-lg"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No hay pacientes recientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh crítico cada 2 minutos para emergencias
+setInterval(() => {
+    window.location.reload();
+}, 120000);
+</script>
+{% endblock %}
