@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from apps.triage.models import Profesional
 
 class Command(BaseCommand):
-    help = 'Crea o resetea el admin único del sistema (admin/123456)'
+    help = 'Crea o resetea el admin único del sistema (admin/123456) - CAMBIAR EN PRODUCCIÓN'
 
     def handle(self, *args, **options):
         self.stdout.write('🏥 CONFIGURANDO ADMIN ÚNICO')

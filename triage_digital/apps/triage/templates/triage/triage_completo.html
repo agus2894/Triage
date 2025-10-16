@@ -1,0 +1,377 @@
+{% extends 'triage/base.html' %}
+
+{% block title %}Triage Completo - Una Sola Pantalla{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos especiales para selectores médicos seguros */
+    .form-select {
+        border-left: 4px solid #28a745;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23198754' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    }
+    
+    .form-select:focus {
+        border-left-color: #20c997;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .text-success {
+        font-weight: 500;
+    }
+    
+    /* Highlight para opciones críticas */
+    .form-select option[data-news="3"] {
+        color: #dc2626;
+        font-weight: bold;
+    }
+</style>
+<div class="mobile-triage-form">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+            
+            <!-- Header con progreso -->
+            <div class="card card-mobile mb-3">
+                <div class="card-body p-3 text-center">
+                    <h4 class="h5 h4-md mb-2">
+                        <i class="bi bi-shield-check text-success"></i> 
+                        <span class="d-mobile-none">Triage Seguro - Selecciones Predefinidas</span>
+                        <span class="d-xl-none">Triage Seguro</span>
+                    </h4>
+                    <small class="text-success fw-bold">✓ Sin errores de tipeo - Solo rangos clínicos validados</small>
+                </div>
+            </div>
+
+            <!-- Formulario unificado -->
+            <form method="post" class="needs-validation" novalidate id="triageCompletoForm">
+                {% csrf_token %}
+                
+                <!-- SECCIÓN 1: DATOS DEL PACIENTE -->
+                <div class="card card-mobile mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge"></i> 
+                            <span class="d-mobile-none">1. Datos del Paciente</span>
+                            <span class="d-md-none">1. Paciente</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="nombre" class="form-label fw-bold">
+                                    <i class="bi bi-person text-info"></i> Nombre
+                                </label>
+                                <input type="text" class="form-control form-control-mobile" 
+                                       id="nombre" name="nombre" maxlength="100" 
+                                       placeholder="Juan Carlos" autocomplete="given-name">
+                                <small class="text-muted">Opcional si paciente inconsciente</small>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="apellido" class="form-label fw-bold">
+                                    <i class="bi bi-person text-info"></i> Apellido
+                                </label>
+                                <input type="text" class="form-control form-control-mobile" 
+                                       id="apellido" name="apellido" maxlength="100" 
+                                       placeholder="Pérez" autocomplete="family-name">
+                                <small class="text-muted">Opcional si paciente inconsciente</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-12 col-md-4">
+                                <label for="dni" class="form-label fw-bold">
+                                    <i class="bi bi-card-text text-warning"></i> DNI
+                                </label>
+                                <input type="number" class="form-control form-control-mobile" 
+                                       id="dni" name="dni" inputmode="numeric" 
+                                       placeholder="12345678" maxlength="8">
+                                <small class="text-muted">Opcional si inconsciente</small>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="edad" class="form-label fw-bold">
+                                    <i class="bi bi-calendar text-success"></i> Edad
+                                </label>
+                                <input type="number" class="form-control form-control-mobile" 
+                                       id="edad" name="edad" min="0" max="120" 
+                                       inputmode="numeric" placeholder="45">
+                                <small class="text-muted">Años aproximados</small>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="sexo" class="form-label fw-bold">
+                                    <i class="bi bi-gender-ambiguous text-secondary"></i> Sexo
+                                </label>
+                                <select class="form-control form-control-mobile" id="sexo" name="sexo">
+                                    <option value="">Seleccionar</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="X">No especificado</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label for="motivo_consulta" class="form-label fw-bold">
+                                <i class="bi bi-chat-text text-primary"></i> Motivo de Consulta
+                            </label>
+                            <textarea class="form-control form-control-mobile" 
+                                      id="motivo_consulta" name="motivo_consulta" 
+                                      rows="2" maxlength="500" 
+                                      placeholder="Dolor de pecho, dificultad respiratoria, etc..."></textarea>
+                            <small class="text-muted">Opcional - Descripción breve</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: SIGNOS VITALES -->
+                <div class="card card-mobile mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="bi bi-heart-pulse"></i> 
+                            <span class="d-mobile-none">2. Signos Vitales - NEWS Score</span>
+                            <span class="d-md-none">2. Signos Vitales</span>
+                        </h5>
+                    </div>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="row g-3">
+                            <!-- Frecuencia Respiratoria -->
+                            <div class="col-12 col-lg-6">
+                                <label for="frecuencia_respiratoria" class="form-label fw-bold">
+                                    <i class="bi bi-lungs text-info"></i> Frecuencia Respiratoria *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="frecuencia_respiratoria" name="frecuencia_respiratoria" 
+                                        required>
+                                    <option value="">Seleccionar rango...</option>
+                                    <option value="8" data-news="3">≤8 resp/min (Muy baja)</option>
+                                    <option value="11" data-news="1">9-11 resp/min (Baja)</option>
+                                    <option value="18" data-news="0">12-20 resp/min (Normal)</option>
+                                    <option value="22" data-news="2">21-24 resp/min (Alta)</option>
+                                    <option value="26" data-news="3">≥25 resp/min (Muy alta)</option>
+                                </select>
+                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                            </div>
+
+                            <!-- Saturación Oxígeno -->
+                            <div class="col-12 col-lg-6">
+                                <label for="saturacion_oxigeno" class="form-label fw-bold">
+                                    <i class="bi bi-droplet text-primary"></i> Saturación de Oxígeno *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="saturacion_oxigeno" name="saturacion_oxigeno" 
+                                        required>
+                                    <option value="">Seleccionar rango...</option>
+                                    <option value="91" data-news="3">≤91% (Crítica)</option>
+                                    <option value="93" data-news="2">92-93% (Baja)</option>
+                                    <option value="95" data-news="1">94-95% (Límite)</option>
+                                    <option value="98" data-news="0">≥96% (Normal)</option>
+                                </select>
+                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                            </div>
+
+                            <!-- Tensión Sistólica -->
+                            <div class="col-12 col-lg-6">
+                                <label for="tension_sistolica" class="form-label fw-bold">
+                                    <i class="bi bi-activity text-danger"></i> Tensión Sistólica *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="tension_sistolica" name="tension_sistolica" 
+                                        required>
+                                    <option value="">Seleccionar rango...</option>
+                                    <option value="90" data-news="3">≤90 mmHg (Hipotensión severa)</option>
+                                    <option value="100" data-news="2">91-100 mmHg (Hipotensión)</option>
+                                    <option value="110" data-news="1">101-110 mmHg (Baja)</option>
+                                    <option value="130" data-news="0">111-219 mmHg (Normal)</option>
+                                    <option value="230" data-news="3">≥220 mmHg (Hipertensión severa)</option>
+                                </select>
+                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                            </div>
+
+                            <!-- Frecuencia Cardíaca -->
+                            <div class="col-12 col-lg-6">
+                                <label for="frecuencia_cardiaca" class="form-label fw-bold">
+                                    <i class="bi bi-heart text-danger"></i> Frecuencia Cardíaca *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="frecuencia_cardiaca" name="frecuencia_cardiaca" 
+                                        required>
+                                    <option value="">Seleccionar rango...</option>
+                                    <option value="40" data-news="3">≤40 lpm (Bradicardia severa)</option>
+                                    <option value="50" data-news="1">41-50 lpm (Bradicardia)</option>
+                                    <option value="90" data-news="0">51-90 lpm (Normal)</option>
+                                    <option value="110" data-news="1">91-110 lpm (Taquicardia leve)</option>
+                                    <option value="130" data-news="2">111-130 lpm (Taquicardia)</option>
+                                    <option value="140" data-news="3">≥131 lpm (Taquicardia severa)</option>
+                                </select>
+                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                            </div>
+
+                            <!-- Temperatura -->
+                            <div class="col-12 col-lg-6">
+                                <label for="temperatura" class="form-label fw-bold">
+                                    <i class="bi bi-thermometer text-warning"></i> Temperatura *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="temperatura" name="temperatura" 
+                                        required>
+                                    <option value="">Seleccionar rango...</option>
+                                    <option value="35.0" data-news="3">≤35.0°C (Hipotermia severa)</option>
+                                    <option value="36.0" data-news="1">35.1-36.0°C (Hipotermia leve)</option>
+                                    <option value="37.0" data-news="0">36.1-38.0°C (Normal)</option>
+                                    <option value="39.0" data-news="1">38.1-39.0°C (Fiebre leve)</option>
+                                    <option value="40.0" data-news="2">≥39.1°C (Fiebre alta)</option>
+                                </select>
+                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                            </div>
+
+                            <!-- Nivel de Conciencia -->
+                            <div class="col-12 col-lg-6">
+                                <label for="nivel_conciencia" class="form-label fw-bold">
+                                    <i class="bi bi-eye text-success"></i> Nivel de Conciencia *
+                                </label>
+                                <select class="form-select form-control-mobile" 
+                                        id="nivel_conciencia" name="nivel_conciencia" required>
+                                    <option value="">Seleccionar nivel...</option>
+                                    <option value="A" data-news="0">A - Alerta y orientado (Normal)</option>
+                                    <option value="V" data-news="3">V - Responde a estímulos verbales</option>
+                                    <option value="P" data-news="3">P - Responde solo a dolor</option>
+                                    <option value="U" data-news="3">U - No responde (inconsciente)</option>
+                                </select>
+                                <small class="text-success">✓ Escala AVPU predefinida</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: RESULTADO NEWS -->
+                <div class="card card-mobile mb-4" id="resultadoCard" style="display: none;">
+                    <div class="card-header text-white" id="resultadoHeader">
+                        <h5 class="mb-0">
+                            <i class="bi bi-calculator"></i> 
+                            <span class="d-mobile-none">3. Resultado del Triage</span>
+                            <span class="d-md-none">3. Resultado</span>
+                        </h5>
+                    </div>
+                    <div class="card-body text-center p-4">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h2 id="newsScore" class="display-4 fw-bold">--</h2>
+                                <p class="mb-0"><strong>NEWS Score</strong></p>
+                            </div>
+                            <div class="col-md-4">
+                                <h3 id="nivelUrgencia" class="h2">--</h3>
+                                <p class="mb-0"><strong>Nivel de Urgencia</strong></p>
+                            </div>
+                            <div class="col-md-4">
+                                <h4 id="tiempoAtencion" class="h3">--</h4>
+                                <p class="mb-0"><strong>Tiempo Máximo</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTONES DE ACCIÓN -->
+                <div class="row g-2 mb-4">
+                    <div class="col-12 col-md-6 order-2 order-md-1">
+                        <a href="{% url 'triage:dashboard' %}" 
+                           class="btn btn-secondary btn-mobile w-100 touch-target">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
+                    <div class="col-12 col-md-6 order-1 order-md-2">
+                        <button type="submit" class="btn btn-success btn-mobile w-100 touch-target" id="btnCompletar">
+                            <i class="bi bi-check-circle"></i> 
+                            <span class="d-mobile-none">Completar Triage</span>
+                            <span class="d-md-none">Completar</span>
+                        </button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para cálculo en tiempo real -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('triageCompletoForm');
+    const signosInputs = form.querySelectorAll('#frecuencia_respiratoria, #saturacion_oxigeno, #tension_sistolica, #frecuencia_cardiaca, #temperatura, #nivel_conciencia');
+    
+    // Función para calcular NEWS Score usando selectores predefinidos
+    function calcularNEWS() {
+        const selectores = ['frecuencia_respiratoria', 'saturacion_oxigeno', 'tension_sistolica', 'frecuencia_cardiaca', 'temperatura', 'nivel_conciencia'];
+        
+        let score = 0;
+        let todosCompletos = true;
+        
+        // Sumar puntajes NEWS de cada selector
+        for (const selectorId of selectores) {
+            const selector = document.getElementById(selectorId);
+            const selectedOption = selector.options[selector.selectedIndex];
+            
+            if (!selector.value) {
+                todosCompletos = false;
+                continue;
+            }
+            
+            // Obtener puntaje NEWS del atributo data-news
+            const newsScore = parseInt(selectedOption.getAttribute('data-news')) || 0;
+            score += newsScore;
+        }
+        
+        // Si no están todos los campos completos, ocultar resultado
+        if (!todosCompletos) {
+            document.getElementById('resultadoCard').style.display = 'none';
+            return;
+        }
+        
+        // Temperatura
+        if (temp <= 35.0) score += 3;
+        else if (temp <= 36.0) score += 1;
+        else if (temp <= 38.0) score += 0;
+        else if (temp <= 39.0) score += 1;
+        
+        // Determinar nivel de urgencia
+        let nivel, tiempo, colorClass;
+        if (score >= 7) {
+            nivel = 'ROJO';
+            tiempo = 'INMEDIATO';
+            colorClass = 'bg-danger';
+        } else if (score >= 4) {
+            nivel = 'AMARILLO';
+            tiempo = '30 min';
+            colorClass = 'bg-warning text-dark';
+        } else {
+            nivel = 'VERDE';
+            tiempo = '60 min';
+            colorClass = 'bg-success';
+        }
+        
+        // Actualizar UI
+        document.getElementById('newsScore').textContent = score;
+        document.getElementById('nivelUrgencia').textContent = nivel;
+        document.getElementById('tiempoAtencion').textContent = tiempo;
+        document.getElementById('resultadoHeader').className = `card-header text-white ${colorClass}`;
+        document.getElementById('resultadoCard').style.display = 'block';
+        
+        // Cambiar color del botón según urgencia
+        const btnCompletar = document.getElementById('btnCompletar');
+        btnCompletar.className = `btn btn-mobile w-100 touch-target ${colorClass.replace('bg-', 'btn-')}`;
+    }
+    
+    // Agregar listeners a todos los selectores de signos vitales
+    signosInputs.forEach(selector => {
+        selector.addEventListener('change', calcularNEWS);
+    });
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+
+{% endblock %}

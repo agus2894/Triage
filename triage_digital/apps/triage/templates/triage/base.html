@@ -9,65 +9,261 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     
-    <!-- Estilos ultra-mínimos -->
+    <!-- Estilos responsive optimizados para móvil -->
     <style>
+        /* Colores triage */
         .triage-rojo{background:#dc3545;color:#fff}
         .triage-amarillo{background:#ffc107;color:#000}
         .triage-verde{background:#28a745;color:#fff}
         .urgente{animation:p 1s infinite}
         @keyframes p{50%{opacity:.5}}
+        
+        /* RESPONSIVE MOBILE-FIRST */
+        
+        /* Base: Mobile */
+        .btn-mobile {
+            min-height: 48px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            margin: 4px 0;
+        }
+        
+        .form-control-mobile {
+            min-height: 48px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .form-control-mobile:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .card-mobile {
+            margin-bottom: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .table-mobile {
+            font-size: 0.9rem;
+        }
+        
+        .navbar-mobile {
+            padding: 0.75rem 1rem;
+        }
+        
+        /* Touch targets */
+        .touch-target {
+            min-width: 44px;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Ocultar elementos en móvil */
+        .d-mobile-none {
+            display: none !important;
+        }
+        
+        /* Tablet: 768px+ */
+        @media (min-width: 768px) {
+            .btn-mobile {
+                min-height: 42px;
+                font-size: 1rem;
+            }
+            
+            .form-control-mobile {
+                min-height: 42px;
+                font-size: 1rem;
+            }
+            
+            .d-tablet-block {
+                display: block !important;
+            }
+            
+            .d-mobile-none {
+                display: initial !important;
+            }
+        }
+        
+        /* Desktop: 992px+ */
+        @media (min-width: 992px) {
+            .btn-mobile {
+                min-height: 38px;
+                font-size: 0.9rem;
+            }
+            
+            .form-control-mobile {
+                min-height: 38px;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Modos específicos */
+        .mobile-triage-form {
+            padding: 1.5rem;
+        }
+        
+        .mobile-dashboard {
+            padding: 1rem 0.5rem;
+        }
+        
+        .mobile-card-stack .card {
+            margin-bottom: 0.75rem;
+            border-left: 4px solid #dee2e6;
+        }
+        
+        .mobile-card-stack .card.triage-rojo {
+            border-left-color: #dc3545;
+        }
+        
+        .mobile-card-stack .card.triage-amarillo {
+            border-left-color: #ffc107;
+        }
+        
+        .mobile-card-stack .card.triage-verde {
+            border-left-color: #28a745;
+        }
+        
+        /* Navegación móvil mejorada */
+        @media (max-width: 767px) {
+            .navbar-nav {
+                background: rgba(255,255,255,0.1);
+                border-radius: 8px;
+                padding: 0.5rem;
+                margin-top: 0.5rem;
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 0.75rem 1rem;
+                border-radius: 6px;
+                margin: 2px 0;
+            }
+            
+            .navbar-nav .nav-link:hover {
+                background: rgba(255,255,255,0.2);
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Navbar médico -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <!-- Navbar médico responsive -->
+    <nav class="navbar navbar-expand-md navbar-dark bg-primary navbar-mobile">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'triage:dashboard' %}">
-                <i class="bi bi-hospital"></i> Triage Digital
+            <a class="navbar-brand touch-target" href="{% url 'triage:dashboard' %}">
+                <i class="bi bi-hospital"></i> 
+                <span class="d-mobile-none">Triage Digital</span>
+                <span class="d-md-none">Triage</span>
             </a>
             
             {% if user.is_authenticated %}
-            <div class="navbar-nav ms-auto">
-                <span class="navbar-text me-3">
-                    <i class="bi bi-person-badge"></i> {{ user.get_full_name|default:user.username }}
-                </span>
-                <a class="nav-link" href="{% url 'logout' %}">
-                    <i class="bi bi-box-arrow-right"></i> Salir
-                </a>
+            <!-- Botón hamburguesa para móvil -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    <!-- Menú principal -->
+                    <a class="nav-link touch-target" href="{% url 'triage:dashboard' %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link touch-target" href="{% url 'triage:triage_completo' %}">
+                        <i class="bi bi-clipboard-plus"></i> 
+                        <span class="d-mobile-none">Triage Completo</span>
+                        <span class="d-md-none">Triage</span>
+                    </a>
+                    <button class="nav-link touch-target btn btn-link d-lg-none text-start" type="button" 
+                            data-bs-toggle="offcanvas" data-bs-target="#sidebarMovil">
+                        <i class="bi bi-people"></i> 
+                        <span>Ver Pacientes</span> 
+                        <span class="badge bg-primary ms-2" id="contador-pacientes-mobile">0</span>
+                    </button>
+                    
+                    
+                    <!-- Usuario y logout -->
+                    <div class="navbar-text d-mobile-none">
+                        <i class="bi bi-person-badge"></i> {{ user.get_full_name|default:user.username }}
+                    </div>
+                    <a class="nav-link touch-target text-warning" href="{% url 'logout' %}">
+                        <i class="bi bi-box-arrow-right"></i> Salir
+                    </a>
+                </div>
             </div>
             {% endif %}
         </div>
     </nav>
 
+    <!-- Sidebar móvil (offcanvas) -->
+    <div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="sidebarMovil">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title">
+                <i class="bi bi-people-fill"></i> Pacientes en Espera
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body p-0">
+            <div class="p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-muted">Actualización automática</small>
+                    <button class="btn btn-sm btn-outline-primary" onclick="cargarPacientes()" title="Actualizar lista">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                <div id="panel-pacientes-mobile">
+                    <div class="text-center text-muted py-4">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <div class="mt-2">Cargando pacientes...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container-fluid">
         <div class="row">
             {% if user.is_authenticated %}
-            <!-- Sidebar de navegación -->
-            <nav class="col-md-2 d-md-block bg-light sidebar">
-                <div class="position-sticky pt-3">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'triage:dashboard' %}">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'triage:registrar_paciente' %}">
-                                <i class="bi bi-person-plus"></i> Nuevo Paciente
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'triage:lista_pacientes' %}">
-                                <i class="bi bi-people"></i> Lista Pacientes
-                            </a>
-                        </li>
-                    </ul>
+            <!-- Panel lateral fijo - Lista de pacientes en tiempo real -->
+            <div class="col-lg-3 d-lg-block bg-light sidebar border-end">
+                <div class="position-sticky pt-3" style="top: 76px; height: calc(100vh - 76px); overflow-y: auto;">
+                    <div class="px-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0 text-primary">
+                                <i class="bi bi-people-fill"></i> Pacientes en Espera
+                            </h6>
+                            <span class="badge bg-primary rounded-pill" id="contador-pacientes">0</span>
+                        </div>
+                        
+                        <!-- Botón de actualización manual -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <small class="text-muted">Actualización automática</small>
+                            <button class="btn btn-sm btn-outline-primary" onclick="cargarPacientes()" title="Actualizar lista">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Lista de pacientes -->
+                        <div id="panel-pacientes">
+                            <div class="text-center text-muted py-4">
+                                <div class="spinner-border spinner-border-sm" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <div class="mt-2">Cargando pacientes...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </nav>
+            </div>
             {% endif %}
 
             <!-- Contenido principal -->
-            <main class="{% if user.is_authenticated %}col-md-10 ms-sm-auto{% else %}col-12{% endif %} px-md-4">
+            <main class="{% if user.is_authenticated %}col-lg-9{% else %}col-12{% endif %} px-md-4">
                 
                 <!-- Mensajes de Django -->
                 {% if messages %}
@@ -119,6 +315,202 @@
 
         // Refresh cada 5 minutos para datos críticos
         setInterval(actualizarDashboard, 300000);
+        
+        // Función para cargar lista de pacientes en sidebar
+        function cargarPacientes() {
+            const panel = document.getElementById('panel-pacientes');
+            const panelMobile = document.getElementById('panel-pacientes-mobile');
+            if (!panel && !panelMobile) return;
+            
+            // Mostrar loading en ambos paneles
+            const loadingHtml = `
+                <div class="text-center text-muted py-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Actualizando...</span>
+                    </div>
+                    <div class="mt-2 small">Actualizando...</div>
+                </div>
+            `;
+            if (panel) panel.innerHTML = loadingHtml;
+            if (panelMobile) panelMobile.innerHTML = loadingHtml;
+            
+            // Fetch lista de pacientes
+            fetch('/triage/api/lista-pacientes/')
+                .then(response => response.json())
+                .then(data => {
+                    // Actualizar contadores
+                    const contador = document.getElementById('contador-pacientes');
+                    const contadorMobile = document.getElementById('contador-pacientes-mobile');
+                    if (contador) contador.textContent = data.length;
+                    if (contadorMobile) contadorMobile.textContent = data.length;
+                    
+                    if (data.length === 0) {
+                        const emptyHtml = `
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-check-circle-fill text-success fs-1"></i>
+                                <div class="mt-2 small">¡No hay pacientes esperando!</div>
+                            </div>
+                        `;
+                        if (panel) panel.innerHTML = emptyHtml;
+                        if (panelMobile) panelMobile.innerHTML = emptyHtml;
+                        return;
+                    }
+                    
+                    let html = '';
+                    data.forEach(paciente => {
+                        const tiempoColor = paciente.tiempo_espera_minutos > 30 ? 'text-danger' : 'text-warning';
+                        const nivelColor = paciente.nivel_urgencia === 'ROJO' ? 'danger' : 
+                                          paciente.nivel_urgencia === 'AMARILLO' ? 'warning' : 'success';
+                        
+                        html += `
+                            <div class="card card-sm mb-2 border-${nivelColor}" id="paciente-${paciente.id}">
+                                <div class="card-body p-2">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title mb-1 small">${paciente.nombre_completo}</h6>
+                                            <div class="small text-muted mb-1">
+                                                ${paciente.dni ? 'DNI: ' + paciente.dni : 'Sin DNI'}
+                                                ${paciente.edad ? ' | ' + paciente.edad + ' años' : ''}
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge bg-${nivelColor} small">${paciente.nivel_urgencia}</span>
+                                                <div class="d-flex align-items-center">
+                                                    <small class="${tiempoColor} me-2">
+                                                        <i class="bi bi-clock"></i> ${paciente.tiempo_espera}
+                                                    </small>
+                                                    <button class="btn btn-success btn-sm" 
+                                                            onclick="marcarAtendido(${paciente.id}, '${paciente.nombre_completo}')"
+                                                            title="Marcar como atendido">
+                                                        <i class="bi bi-check"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Actualizar ambos paneles
+                    if (panel) panel.innerHTML = html;
+                    if (panelMobile) panelMobile.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error cargando pacientes:', error);
+                    const errorHtml = `
+                        <div class="text-center text-danger py-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <div class="mt-2 small">Error al cargar pacientes</div>
+                        </div>
+                    `;
+                    if (panel) panel.innerHTML = errorHtml;
+                    if (panelMobile) panelMobile.innerHTML = errorHtml;
+                });
+        }
+        
+        // Cargar pacientes al iniciar y cada 30 segundos
+        if (document.getElementById('panel-pacientes') || document.getElementById('panel-pacientes-mobile')) {
+            cargarPacientes();
+            setInterval(cargarPacientes, 30000); // Actualizar cada 30 segundos
+        }
+        
+        // Función para marcar paciente como atendido
+        function marcarAtendido(pacienteId, nombrePaciente) {
+            if (!confirm(`¿Confirma que ${nombrePaciente} ha sido atendido?`)) {
+                return;
+            }
+            
+            // Deshabilitar botón mientras se procesa
+            const botones = document.querySelectorAll(`button[onclick="marcarAtendido(${pacienteId}, '${nombrePaciente}')"]`);
+            botones.forEach(btn => {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            });
+            
+            // Llamada AJAX para marcar como atendido
+            fetch(`/triage/paciente/${pacienteId}/atendido/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                   document.querySelector('meta[name=csrf-token]')?.content ||
+                                   getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    mostrarMensaje(`✅ ${nombrePaciente} marcado como atendido`, 'success');
+                    
+                    // Remover de la vista inmediatamente
+                    const tarjeta = document.getElementById(`paciente-${pacienteId}`);
+                    if (tarjeta) {
+                        tarjeta.style.transition = 'all 0.3s ease';
+                        tarjeta.style.opacity = '0';
+                        tarjeta.style.transform = 'translateX(100%)';
+                        setTimeout(() => tarjeta.remove(), 300);
+                    }
+                    
+                    // Recargar datos para asegurar consistencia
+                    setTimeout(cargarPacientes, 1000);
+                } else {
+                    mostrarMensaje(`❌ Error: ${data.error}`, 'error');
+                    // Rehabilitar botones
+                    botones.forEach(btn => {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-check"></i>';
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('❌ Error de conexión', 'error');
+                // Rehabilitar botones
+                botones.forEach(btn => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check"></i>';
+                });
+            });
+        }
+        
+        // Función para mostrar mensajes temporales
+        function mostrarMensaje(mensaje, tipo) {
+            const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                     style="top: 80px; right: 20px; z-index: 9999; min-width: 300px;">
+                    ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Agregar al body
+            document.body.insertAdjacentHTML('beforeend', alertHtml);
+            
+            // Auto-remover después de 3 segundos
+            setTimeout(() => {
+                const alert = document.querySelector('.alert.position-fixed');
+                if (alert) alert.remove();
+            }, 3000);
+        }
+        
+        // Función helper para obtener CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
     </script>
 
     {% block extra_js %}

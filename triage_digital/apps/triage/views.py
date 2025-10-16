@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.core.cache import cache
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import timedelta
 
@@ -20,15 +20,24 @@ from apps.patients.models import Paciente
 from .models import SignosVitales, TriageResult, Profesional
 
 
+
 @login_required
 @require_http_methods(["GET", "POST"])
-def registrar_paciente(request):
+def triage_completo(request):
     """
-    Registro rápido de pacientes - Solo datos esenciales.
+    Formulario unificado: Registro de paciente + Signos vitales + Triage en una sola pantalla.
+    GAME CHANGER: Todo el flujo médico en una sola vista.
     """
     if request.method == 'POST':
         try:
-            # Crear paciente con datos mínimos (campos opcionales para inconscientes)
+            # Obtener el profesional asociado al usuario
+            try:
+                profesional = request.user.profesional
+            except Profesional.DoesNotExist:
+                messages.error(request, 'Usuario no tiene perfil de profesional asociado.')
+                return redirect('triage:dashboard')
+            
+            # 1. Crear paciente con datos opcionales
             nombre = request.POST.get('nombre', '').strip() or None
             apellido = request.POST.get('apellido', '').strip() or None
             dni = request.POST.get('dni', '').strip() or None
@@ -41,13 +50,36 @@ def registrar_paciente(request):
                 edad=int(edad) if edad else None,
                 motivo_consulta=request.POST.get('motivo_consulta', '').strip()
             )
-            messages.success(request, f'Paciente {paciente.nombre_completo} registrado exitosamente.')
-            return redirect('triage:cargar_signos', paciente_id=paciente.id)
-        
+            
+            # 2. Crear signos vitales (auto-calcula triage en save())
+            signos = SignosVitales.objects.create(
+                paciente=paciente,
+                profesional=profesional,
+                frecuencia_respiratoria=int(request.POST['frecuencia_respiratoria']),
+                saturacion_oxigeno=int(request.POST['saturacion_oxigeno']),
+                tension_sistolica=int(request.POST['tension_sistolica']),
+                frecuencia_cardiaca=int(request.POST['frecuencia_cardiaca']),
+                nivel_conciencia=request.POST['nivel_conciencia'],
+                temperatura=float(request.POST['temperatura'])
+            )
+            
+            # 3. Obtener resultado del triage
+            resultado = TriageResult.objects.get(signos_vitales=signos)
+            
+            # 4. Mensaje de éxito con toda la información
+            messages.success(
+                request, 
+                f'Triage completado para {paciente.nombre_completo}: '
+                f'{resultado.nivel_urgencia} (NEWS: {resultado.news_score}) - '
+                f'Tiempo máximo: {resultado.tiempo_atencion_max} minutos'
+            )
+            
+            return redirect('triage:dashboard')
+            
         except Exception as e:
-            messages.error(request, f'Error al registrar paciente: {str(e)}')
+            messages.error(request, f'Error al completar triage: {str(e)}')
     
-    return render(request, 'triage/registrar_paciente.html')
+    return render(request, 'triage/triage_completo.html')
 
 
 @login_required
@@ -161,80 +193,6 @@ def dashboard_principal(request):
     return render(request, 'triage/dashboard.html', context)
 
 
-@login_required
-def api_estado_paciente(request, paciente_id):
-    """
-    API simple para obtener estado actual del paciente.
-    """
-    try:
-        paciente = get_object_or_404(Paciente, id=paciente_id)
-        ultimo_triage = None
-        
-        # Buscar último resultado de triage
-        try:
-            ultimo_signos = SignosVitales.objects.filter(
-                paciente=paciente
-            ).latest('fecha_hora')
-            ultimo_triage = TriageResult.objects.get(signos_vitales=ultimo_signos)
-        except (SignosVitales.DoesNotExist, TriageResult.DoesNotExist):
-            pass
-        
-        data = {
-            'paciente': {
-                'id': paciente.id,
-                'nombre_completo': paciente.nombre_completo,
-                'dni': paciente.dni,
-                'edad': paciente.edad,
-                'tiempo_espera': paciente.tiempo_espera
-            },
-            'triage': {
-                'nivel_urgencia': ultimo_triage.nivel_urgencia if ultimo_triage else None,
-                'news_score': ultimo_triage.news_score if ultimo_triage else None,
-                'tiempo_atencion_max': ultimo_triage.tiempo_atencion_max if ultimo_triage else None,
-                'color_hex': ultimo_triage.color_hex if ultimo_triage else '#6c757d'
-            } if ultimo_triage else None
-        }
-        
-        return JsonResponse(data)
-        
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
-
-
-@login_required
-def lista_pacientes(request):
-    """
-    Lista simple de pacientes activos con su estado de triage.
-    """
-    # Filtrar por estado (por defecto solo pendientes)
-    estado_filtro = request.GET.get('estado', 'pendientes')
-    
-    if estado_filtro == 'todos':
-        filtro_estado = {}
-    elif estado_filtro == 'atendidos':
-        filtro_estado = {'estado_atencion': 'ATENDIDO'}
-    else:  # pendientes
-        filtro_estado = {'estado_atencion__in': ['ESPERANDO', 'EN_ATENCION']}
-    
-    # Pacientes con su último triage - CONSULTA OPTIMIZADA
-    pacientes_query = Paciente.objects.filter(
-        activo=True,
-        **filtro_estado
-    ).prefetch_related(
-        Prefetch(
-            'signos_vitales',
-            queryset=SignosVitales.objects.select_related('profesional__user').order_by('-fecha_hora')
-        )
-    ).order_by('-fecha_ingreso')
-    
-    context = {
-        'pacientes': pacientes_query,
-        'estado_filtro': estado_filtro,
-        'total_pendientes': Paciente.objects.filter(activo=True, estado_atencion__in=['ESPERANDO', 'EN_ATENCION']).count(),
-        'total_atendidos': Paciente.objects.filter(activo=True, estado_atencion='ATENDIDO').count(),
-    }
-    
-    return render(request, 'triage/lista_pacientes.html', context)
 
 
 @login_required
@@ -253,3 +211,50 @@ def marcar_atendido(request, paciente_id):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_lista_pacientes(request):
+    """
+    API para obtener lista de pacientes en espera (sidebar en tiempo real).
+    """
+    try:
+        # Obtener pacientes en espera - simple y sin errores
+        pacientes = Paciente.objects.filter(
+            activo=True,
+            estado_atencion='ESPERANDO'
+        ).order_by('-fecha_ingreso')
+        
+        data = []
+        for paciente in pacientes:
+            try:
+                # Obtener último triage si existe
+                nivel_urgencia = 'SIN TRIAGE'
+                ultimo_signo = paciente.signos_vitales.first()
+                if ultimo_signo:
+                    try:
+                        resultado = TriageResult.objects.get(signos_vitales=ultimo_signo)
+                        nivel_urgencia = resultado.nivel_urgencia
+                    except TriageResult.DoesNotExist:
+                        pass
+                
+                data.append({
+                    'id': paciente.id,
+                    'nombre_completo': paciente.nombre_completo,
+                    'dni': paciente.dni or 'Sin DNI',
+                    'edad': paciente.edad,
+                    'tiempo_espera': paciente.tiempo_espera,
+                    'tiempo_espera_minutos': paciente.tiempo_espera_minutos,
+                    'nivel_urgencia': nivel_urgencia,
+                    'motivo_consulta': paciente.motivo_consulta or ''
+                })
+            except Exception as e:
+                logger.error(f"Error procesando paciente {paciente.id}: {str(e)}")
+                continue  # Saltar este paciente pero seguir con los demás
+        
+        return JsonResponse(data, safe=False)
+        
+    except Exception as e:
+        logger.error(f"Error en API lista pacientes: {str(e)}")
+        return JsonResponse({'error': 'Error interno del servidor', 'detail': str(e)}, status=500)

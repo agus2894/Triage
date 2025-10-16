@@ -28,8 +28,11 @@ MANIFEST
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
+triage_digital.sqlite3
 media/
 staticfiles/
+logs/
 
 # Archivos sensibles
 CREDENCIALES.md

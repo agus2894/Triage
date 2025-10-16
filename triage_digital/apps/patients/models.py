@@ -106,6 +106,14 @@ class Paciente(models.Model):
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
         ordering = ['-fecha_ingreso']  # Más recientes primero
+        indexes = [
+            # Índice para la consulta más frecuente: pacientes activos en espera
+            models.Index(fields=['activo', 'estado_atencion', '-fecha_ingreso'], name='idx_pacientes_activos'),
+            # Índice para búsquedas por DNI
+            models.Index(fields=['dni'], name='idx_pacientes_dni'),
+            # Índice para estadísticas por fecha
+            models.Index(fields=['fecha_ingreso'], name='idx_pacientes_fecha'),
+        ]
         
     def __str__(self):
         if self.nombre and self.apellido:
@@ -147,6 +155,15 @@ class Paciente(models.Model):
             return f"{horas}h {minutos}m"
         else:
             return f"{minutos}m"
+
+    @property
+    def tiempo_espera_minutos(self):
+        """Tiempo de espera en minutos para cálculos."""
+        if self.estado_atencion in ['ATENDIDO', 'EN_ATENCION']:
+            return 0
+            
+        delta = timezone.now() - self.fecha_ingreso
+        return int(delta.total_seconds() / 60)
     
     def marcar_atendido(self):
         """Marca el paciente como atendido y actualiza fecha."""
