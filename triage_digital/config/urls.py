@@ -10,11 +10,11 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 def redireccion_inicio(request):
-    """Redirige la URL raíz al tablero o admin (temporal)"""
+    """Redirige la URL raíz al tablero o login profesional"""
     if request.user.is_authenticated:
         return redirect('triage:dashboard')
     else:
-        return redirect('admin:login')
+        return redirect('login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
