@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.models import User
-from .models import SignosVitales, TriageResult, Profesional
+from .models import SignosVitales, Profesional
 
 
 class ProfesionalForm(forms.ModelForm):
@@ -97,50 +97,26 @@ admin.site.index_title = "Gestión de Profesionales Médicos"
 @admin.register(SignosVitales)
 class SignosVitalesAdmin(admin.ModelAdmin):
     """
-    Configuración del admin para el modelo SignosVitales.
+    Configuración del admin para SignosVitales (incluye resultado de triage).
     """
-    list_display = ('paciente', 'frecuencia_respiratoria', 'saturacion_oxigeno', 
-                   'tension_sistolica', 'frecuencia_cardiaca', 'nivel_conciencia', 
-                   'temperatura', 'fecha_hora', 'profesional')
-    list_filter = ('fecha_hora', 'nivel_conciencia', 'profesional')
+    list_display = ('paciente', 'profesional', 'fecha_hora', 'news_score', 
+                   'nivel_urgencia', 'tiempo_atencion_max')
+    list_filter = ('nivel_urgencia', 'fecha_hora', 'news_score')
     search_fields = ('paciente__nombre', 'paciente__apellido', 'paciente__dni')
-    readonly_fields = ('fecha_hora',)
+    readonly_fields = ('fecha_hora', 'news_score', 'nivel_urgencia', 
+                      'tiempo_atencion_max', 'color_hex')
     list_per_page = 20
     
     fieldsets = (
-        ('Paciente', {
+        ('Paciente y Profesional', {
             'fields': ('paciente', 'profesional', 'fecha_hora')
         }),
         ('Signos Vitales', {
-            'fields': (
-                'frecuencia_respiratoria', 
-                'saturacion_oxigeno', 
-                'tension_sistolica', 
-                'frecuencia_cardiaca', 
-                'nivel_conciencia', 
-                'temperatura'
-            )
+            'fields': ('frecuencia_respiratoria', 'saturacion_oxigeno', 
+                      'tension_sistolica', 'frecuencia_cardiaca', 
+                      'nivel_conciencia', 'temperatura')
         }),
-    )
-
-
-@admin.register(TriageResult)
-class TriageResultAdmin(admin.ModelAdmin):
-    """
-    Configuración del admin para el modelo TriageResult.
-    """
-    list_display = ('paciente', 'news_score', 'nivel_urgencia', 
-                   'tiempo_atencion_max', 'fecha_calculo')
-    list_filter = ('nivel_urgencia', 'fecha_calculo', 'news_score')
-    search_fields = ('signos_vitales__paciente__nombre', 
-                    'signos_vitales__paciente__apellido',
-                    'signos_vitales__paciente__dni')
-    readonly_fields = ('fecha_calculo', 'color_hex')
-    list_per_page = 20
-    
-    fieldsets = (
-        ('Resultado', {
-            'fields': ('signos_vitales', 'news_score', 'nivel_urgencia', 
-                      'tiempo_atencion_max', 'color_hex', 'fecha_calculo')
+        ('Resultado Triage (Automático)', {
+            'fields': ('news_score', 'nivel_urgencia', 'tiempo_atencion_max', 'color_hex')
         }),
     )

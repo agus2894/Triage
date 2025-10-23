@@ -174,11 +174,6 @@ class Paciente(models.Model):
     def es_critico(self):
         """Verifica si tiene triage crítico (ROJO/AMARILLO)."""
         ultimo_triage = self.signos_vitales.first()
-        if ultimo_triage:
-            from apps.triage.models import TriageResult
-            try:
-                resultado = TriageResult.objects.get(signos_vitales=ultimo_triage)
-                return resultado.nivel_urgencia in ['ROJO', 'AMARILLO']
-            except TriageResult.DoesNotExist:
-                pass
+        if ultimo_triage and ultimo_triage.nivel_urgencia:
+            return ultimo_triage.nivel_urgencia in ['ROJO', 'AMARILLO']
         return False

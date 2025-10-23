@@ -66,21 +66,48 @@ class Profesional(models.Model):
 
 
 class SignosVitales(models.Model):
-    """Signos vitales para cálculo NEWS Score (6 parámetros)."""
+    """Signos vitales para cálculo NEWS Score (6 parámetros) + Resultado de Triage."""
     
+    # Escala AVPU para nivel de conciencia
     CONCIENCIA_CHOICES = [
         ('A', 'Alerta y orientado'),
-        ('V', 'Responde a estímulos verbales'),
-        ('P', 'Responde solo a estímulos dolorosos'), 
-        ('U', 'No responde (inconsciente)'),
+        ('V', 'Responde a estímulos verbales'), 
+        ('P', 'Responde solo a estímulos dolorosos'),
+        ('U', 'No responde (inconsciente)')
     ]
     
-    # Relación con el paciente
+    # Niveles de urgencia según NEWS Score (Sistema Argentino)
+    NIVEL_URGENCIA_CHOICES = [
+        ('VERDE', 'Verde - Sin riesgo vital (atención dentro de 60 minutos)'),
+        ('AMARILLO', 'Amarillo - Riesgo moderado (atención dentro de 30 minutos)'),
+        ('ROJO', 'Rojo - Riesgo vital inmediato (atención inmediata)'),
+    ]
+    
+    COLOR_CODES = {
+        'VERDE': '#28a745',
+        'AMARILLO': '#ffc107', 
+        'ROJO': '#dc3545'
+    }
+    
+    # Relaciones
     paciente = models.ForeignKey(
         Paciente,
         on_delete=models.CASCADE,
         related_name='signos_vitales',
         verbose_name="Paciente"
+    )
+    
+    profesional = models.ForeignKey(
+        Profesional,
+        on_delete=models.CASCADE,
+        related_name='signos_registrados',
+        verbose_name="Profesional que registra"
+    )
+    
+    # Fecha y hora del registro
+    fecha_hora = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha y hora del registro"
     )
     
     # Parámetros vitales del NEWS Score
@@ -119,22 +146,28 @@ class SignosVitales(models.Model):
         max_digits=4,
         decimal_places=1,
         validators=[MinValueValidator(30.0), MaxValueValidator(45.0)],
-        verbose_name="Temperatura",
-        help_text="Temperatura corporal en °C (30.0-45.0)"
+        verbose_name="Temperatura Corporal",
+        help_text="Temperatura en grados Celsius (30.0-45.0)"
     )
     
-    # Campos de control
-    fecha_hora = models.DateTimeField(
-        default=timezone.now,
-        verbose_name="Fecha y Hora",
-        help_text="Momento en que se tomaron los signos vitales"
+    # Resultado del triage (campos consolidados)
+    news_score = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="Puntaje NEWS",
+        help_text="Puntaje calculado del National Early Warning Score"
     )
     
-    profesional = models.ForeignKey(
-        'Profesional',
-        on_delete=models.PROTECT,
-        verbose_name="Profesional",
-        help_text="Profesional (médico/enfermero) que registró los signos vitales"
+    nivel_urgencia = models.CharField(
+        max_length=8,
+        choices=NIVEL_URGENCIA_CHOICES,
+        null=True, blank=True,
+        verbose_name="Nivel de Urgencia"
+    )
+    
+    tiempo_atencion_max = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="Tiempo máximo de atención",
+        help_text="Tiempo máximo de espera en minutos"
     )
     
     class Meta:
@@ -146,10 +179,16 @@ class SignosVitales(models.Model):
             models.Index(fields=['-fecha_hora'], name='idx_signos_fecha'),
             models.Index(fields=['paciente', '-fecha_hora'], name='idx_paciente_fecha'),
             models.Index(fields=['profesional', '-fecha_hora'], name='idx_profesional_fecha'),
+            models.Index(fields=['nivel_urgencia', '-fecha_hora'], name='idx_urgencia_fecha'),
         ]
         
     def __str__(self):
         return f"Signos vitales - {self.paciente.nombre_completo} ({self.fecha_hora.strftime('%d/%m/%Y %H:%M')})"
+    
+    @property
+    def color_hex(self):
+        """Retorna el código de color hexadecimal para el nivel de urgencia."""
+        return self.COLOR_CODES.get(self.nivel_urgencia, '#6c757d')
     
     def calcular_puntaje_news(self):
         """
@@ -176,90 +215,13 @@ class SignosVitales(models.Model):
         OPTIMIZADO: Cálculo crítico de triage médico.
         Minimiza consultas DB para velocidad en emergencias.
         """
-        # Guardar signos vitales
-        super().save(*args, **kwargs)
-        
         # Cálculo optimizado del triage
         resultado_news = self.calcular_puntaje_news()
         
-        # Una sola operación DB optimizada
-        TriageResult.objects.update_or_create(
-            signos_vitales=self,
-            defaults={
-                'news_score': resultado_news['puntaje_total'],
-                'nivel_urgencia': resultado_news['clasificacion'],
-                'tiempo_atencion_max': resultado_news['tiempo_atencion_maximo'],
-            }
-        )
-
-
-class TriageResult(models.Model):
-    """
-    Modelo para almacenar el resultado del cálculo NEWS Score y clasificación.
-    """
-    
-    # Niveles de urgencia según NEWS Score (Sistema Argentino)
-    NIVEL_URGENCIA_CHOICES = [
-        ('VERDE', 'Verde - Sin riesgo vital (atención dentro de 60 minutos)'),
-        ('AMARILLO', 'Amarillo - Riesgo moderado (atención dentro de 30 minutos)'),
-        ('ROJO', 'Rojo - Riesgo vital inmediato (atención inmediata)'),
-    ]
-    
-    COLOR_CODES = {
-        'VERDE': '#28a745',
-        'AMARILLO': '#ffc107', 
-        'ROJO': '#dc3545'
-    }
-    
-    # Relación con signos vitales
-    signos_vitales = models.OneToOneField(
-        SignosVitales,
-        on_delete=models.CASCADE,
-        related_name='resultado_triage',
-        verbose_name="Signos Vitales"
-    )
-    
-    # Resultado del cálculo
-    news_score = models.PositiveIntegerField(
-        verbose_name="Puntaje NEWS",
-        help_text="Puntaje calculado del National Early Warning Score"
-    )
-    
-    nivel_urgencia = models.CharField(
-        max_length=8,
-        choices=NIVEL_URGENCIA_CHOICES,
-        verbose_name="Nivel de Urgencia"
-    )
-    
-    tiempo_atencion_max = models.PositiveIntegerField(
-        verbose_name="Tiempo máximo de atención",
-        help_text="Tiempo máximo de espera en minutos"
-    )
-    
-    fecha_calculo = models.DateTimeField(
-        default=timezone.now,
-        verbose_name="Fecha del cálculo"
-    )
-    
-    class Meta:
-        verbose_name = "Resultado de Triage"
-        verbose_name_plural = "Resultados de Triage"
-        ordering = ['-fecha_calculo']
-        # Índices críticos para consultas de emergencia
-        indexes = [
-            models.Index(fields=['nivel_urgencia', '-fecha_calculo'], name='idx_urgencia_fecha'),
-            models.Index(fields=['-fecha_calculo'], name='idx_triage_fecha'),
-        ]
+        # Asignar valores calculados
+        self.news_score = resultado_news['puntaje_total']
+        self.nivel_urgencia = resultado_news['clasificacion']
+        self.tiempo_atencion_max = resultado_news['tiempo_atencion_maximo']
         
-    def __str__(self):
-        return f"Triage - {self.signos_vitales.paciente.nombre_completo} - {self.get_nivel_urgencia_display()}"
-    
-    @property
-    def color_hex(self):
-        """Retorna el código de color hexadecimal para el nivel de urgencia."""
-        return self.COLOR_CODES.get(self.nivel_urgencia, '#6c757d')
-    
-    @property
-    def paciente(self):
-        """Acceso directo al paciente a través de los signos vitales."""
-        return self.signos_vitales.paciente
+        # Guardar con triage calculado
+        super().save(*args, **kwargs)

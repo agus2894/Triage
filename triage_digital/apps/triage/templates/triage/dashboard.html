@@ -3,6 +3,7 @@
 {% block title %}Dashboard - Triage Digital{% endblock %}
 
 {% block content %}
+{% csrf_token %}
 <div class="mobile-dashboard">
     <!-- Header responsive -->
     <div class="d-flex justify-content-between align-items-center py-2 py-md-3">
@@ -68,12 +69,21 @@
 
     <!-- Acción rápida: Triage completo -->
     <div class="row mb-3 mb-md-4">
-        <div class="col-12">
+        <div class="col-12 col-md-8">
             <div class="d-grid">
                 <a href="{% url 'triage:triage_completo' %}" class="btn btn-success btn-lg btn-mobile touch-target">
                     <i class="bi bi-clipboard-plus me-2"></i>
                     <span class="d-mobile-none">Nuevo Triage Completo - Todo en Una Página</span>
                     <span class="d-md-none">Nuevo Triage</span>
+                </a>
+            </div>
+        </div>
+        <div class="col-12 col-md-4 mt-2 mt-md-0">
+            <div class="d-grid">
+                <a href="{% url 'triage:reporte_diario' %}" class="btn btn-info btn-lg btn-mobile touch-target">
+                    <i class="bi bi-file-earmark-pdf me-2"></i>
+                    <span class="d-mobile-none">📊 Reporte PDF</span>
+                    <span class="d-md-none">📊 PDF</span>
                 </a>
             </div>
         </div>
@@ -201,8 +211,9 @@
                             <br><small class="text-muted">{{ paciente.fecha_ingreso|timesince }} atrás</small>
                         </div>
                         <div>
-                            <a href="{% url 'triage:cargar_signos' paciente.id %}" 
-                               class="btn btn-sm btn-success">
+                            <a href="{% url 'triage:triage_completo' %}" 
+                               class="btn btn-sm btn-success" 
+                               title="Cargar signos vitales en vista única">
                                 <i class="bi bi-plus-lg"></i>
                             </a>
                         </div>

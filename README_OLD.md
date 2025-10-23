@@ -179,3 +179,130 @@ python3 manage.py setup_admin
 **💙 Desarrollado para salvar vidas - Cada segundo cuenta en emergencias**
 
 *Sistema hospitalario profesional - Octubre 2025*
+- 🟡 **AMARILLO**: Urgencia - 30min máx (NEWS 5-6)
+- 🟢 **VERDE**: No urgente - 60min máx (NEWS 0-4)
+
+## 🛠️ Tecnologías Minimalistas
+
+- **Backend**: Django 5.2.5 + SQLite optimizado
+- **Frontend**: Bootstrap 5 CDN (sin dependencias locales)
+- **Cache**: Sistema unificado inteligente  
+- **Autenticación**: DNI personalizada
+- **Dependencies**: Solo 2 (Django + python-decouple)
+
+## 📁 Estructura Minimalista
+
+```
+triage_digital/
+├── apps/               # Solo código esencial
+│   ├── patients/       # Gestión pacientes
+│   └── triage/         # NEWS Score + Auth
+├── config/             # Configuración Django  
+├── db/                 # Base de datos única
+├── manage.py           # Django management
+├── requirements.txt    # Solo 2 dependencias
+└── start.sh           # Script de inicio
+```
+
+## 📋 Funcionalidades Core
+
+### 🏥 **Sistema Médico**
+- ✅ Formulario unificado (Paciente + Signos + Triage)
+- ✅ NEWS Score automático (6 parámetros médicos)
+- ✅ Clasificación por colores (Rojo/Amarillo/Verde)
+- ✅ Dashboard en tiempo real con sidebar
+- ✅ Estados de atención con botón ATENDIDO
+
+### 📊 **Parámetros NEWS Score**
+1. **Frecuencia Respiratoria** (12-20 normal)
+2. **Saturación de Oxígeno** (≥96% normal)  
+3. **Tensión Arterial Sistólica** (110-219 normal)
+4. **Frecuencia Cardíaca** (51-90 normal)
+5. **Nivel de Conciencia** (A=Alerta, V=Verbal, P=Dolor, U=Inconsciente)
+6. **Temperatura** (36.1-38.0°C normal)
+
+## 🚀 Instalación y Uso
+
+### **Desarrollo**
+```bash
+cd triage_digital
+python3 manage.py runserver 8003
+```
+
+### **Producción**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+## 👥 Créditos
+
+**Desarrollado con filosofía "Menos es Más"**  
+- Sistema médico minimalista y eficiente
+- Optimizado para salvar vidas con simplicidad
+- Zero dependencies innecesarias
+
+---
+*🏥 Triage Digital - Cuando menos es más en sistemas críticos*
+```bash
+./start.sh
+```
+
+### **Producción**
+```bash
+./start.sh prod
+```
+
+## 👥 Credenciales de Acceso
+
+### **🔑 Administrador del Sistema**
+- **Usuario**: `admin`
+- **Contraseña**: `123456`
+- **URL**: http://localhost:8002/admin/
+
+### **🏥 Profesional de Prueba**
+- **DNI**: `00000000`
+- **Contraseña**: `123456`
+- **URL**: http://localhost:8002/
+
+## 📁 Estructura Minimalista
+
+```
+triage_digital/
+├── manage.py            # Django management
+├── requirements.txt     # Dependencias mínimas
+├── requirements.txt     # Dependencias
+├── config/             # Configuración Django
+├── apps/               # Aplicaciones
+│   ├── patients/       # Gestión pacientes
+│   ├── triage/         # NEWS Score + Auth
+│   └── evolution/      # Notas evolución
+└── db/                 # Base de datos
+```
+
+## 🎯 Beneficios del Sistema
+
+- ⚡ **Velocidad**: Ultra-optimizado para situaciones críticas
+- 🎨 **Simplicidad**: Interfaz intuitiva, sin curva de aprendizaje
+- 🔒 **Seguridad**: Autenticación robusta por DNI
+- 📊 **Precisión**: NEWS Score automatizado y estandarizado
+- 🚀 **Escalabilidad**: Listo para producción hospitalaria
+
+---
+
+## 🎯 **Estado del Proyecto - Octubre 2025**
+
+✅ **Sistema 100% Funcional**  
+✅ **Optimización Completa** - "Menos es más" aplicado  
+✅ **Bug Crítico Solucionado** - Lista de pacientes funcionando  
+✅ **Base de Datos Indexada** - Rendimiento máximo  
+✅ **Código Limpio** - Sin funciones redundantes  
+✅ **Listo para Producción** - Variables de entorno configuradas  
+
+---
+
+**💙 Desarrollado para salvar vidas - Cada segundo cuenta en emergencias**
+
+*Sistema creado siguiendo la filosofía "menos es mejor" - Máxima eficiencia, mínima complejidad*
+
+**🏥 Proyecto Hospitalario - 2025**

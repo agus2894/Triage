@@ -11,14 +11,28 @@ echo ""
 # Ir al directorio correcto
 cd "$(dirname "$0")"
 
+# Activar entorno virtual automáticamente
+if [ -f "../.venv/bin/activate" ]; then
+    source ../.venv/bin/activate
+    echo "🐍 Entorno virtual activado"
+fi
+
 # Detección inteligente del entorno
 if [[ "$1" == "prod" ]]; then
     MODO="PRODUCCIÓN"
     PUERTO=80
     HOST="0.0.0.0"
+elif [[ "$1" == "red" ]]; then
+    MODO="RED HOSPITALARIA"
+    PUERTO=8000
+    HOST="0.0.0.0"
+elif [[ "$1" == "demo" ]]; then
+    MODO="DEMO HOSPITALARIA"
+    PUERTO=8000
+    HOST="127.0.0.1"
 else
     MODO="DESARROLLO"
-    PUERTO=8002
+    PUERTO=8000
     HOST="127.0.0.1"
 fi
 
@@ -37,6 +51,12 @@ python3 manage.py setup_admin > /dev/null 2>&1
 # 3. Optimización (silencioso)  
 echo "⚡ Optimizando sistema..."
 python3 manage.py optimize_db --verbosity=0 > /dev/null 2>&1
+
+# 3.5. Datos demo si es modo demo
+if [[ "$1" == "demo" ]]; then
+    echo "🎯 Generando datos de demostración..."
+    python3 manage.py demo_data --reset > /dev/null 2>&1
+fi
 
 # 4. Colectar archivos estáticos si es producción
 if [[ "$1" == "prod" ]]; then
@@ -59,6 +79,15 @@ echo ""
 if [[ "$1" == "prod" ]]; then
     echo "🔥 Iniciando en modo PRODUCCIÓN..."
     python3 manage.py runserver $HOST:$PUERTO --settings=config.settings
+elif [[ "$1" == "red" ]]; then
+    echo "🏥 Iniciando en RED HOSPITALARIA..."
+    echo "📱 Dispositivos pueden acceder desde la red interna"
+    python3 manage.py runserver $HOST:$PUERTO
+elif [[ "$1" == "demo" ]]; then
+    echo "🎯 Iniciando en modo DEMO..."
+    echo "💻 Perfecto para demostraciones locales"
+    echo "📱 PWA instalable desde localhost"
+    python3 manage.py runserver $HOST:$PUERTO
 else
     echo "🧪 Iniciando en modo DESARROLLO..."  
     python3 manage.py runserver $HOST:$PUERTO

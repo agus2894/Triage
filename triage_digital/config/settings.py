@@ -11,8 +11,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'triage-digital-2025-key-CHANGE-IN-PRODUCTION')
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# Hosts permitidos - expandir según necesidad
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
+# Hosts permitidos - Configurado para red hospitalaria
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,192.168.*,10.*,172.*').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -101,33 +101,8 @@ CACHES = {
 # Optimizaciones de performance
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Logging minimalista - Solo errores críticos
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'triage.log',
-        },
-    },
-    'loggers': {
-        'apps.triage': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-        },
-    },
-}
-
 # Archivos estáticos - Solo Bootstrap CDN, sin archivos locales
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-# Media files (no necesarios para este proyecto)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuración de autenticación optimizada
 LOGIN_URL = '/login/'

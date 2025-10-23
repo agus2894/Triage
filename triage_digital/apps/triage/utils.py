@@ -234,21 +234,3 @@ class CalculadoraNEWS:
             'ROJO': '#dc3545'
         }
         return colores.get(clasificacion, '#6c757d')
-    
-    @classmethod
-    def obtener_descripcion_clasificacion(cls, clasificacion: str) -> str:
-        """
-        Obtiene la descripción completa de la clasificación.
-        
-        Args:
-            clasificacion: Nivel de urgencia
-            
-        Returns:
-            Descripción detallada del nivel de urgencia
-        """
-        descripciones = {
-            'VERDE': 'Verde - Sin riesgo vital (atención dentro de 60 minutos)',
-            'AMARILLO': 'Amarillo - Riesgo moderado (atención dentro de 30 minutos)', 
-            'ROJO': 'Rojo - Riesgo vital inmediato (atención inmediata)'
-        }
-        return descripciones.get(clasificacion, 'Clasificación desconocida')

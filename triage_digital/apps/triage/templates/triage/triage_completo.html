@@ -29,15 +29,29 @@
     <div class="row justify-content-center">
         <div class="col-12 col-xl-10">
             
-            <!-- Header con progreso -->
+            <!-- Header minimalista -->
             <div class="card card-mobile mb-3">
                 <div class="card-body p-3 text-center">
                     <h4 class="h5 h4-md mb-2">
-                        <i class="bi bi-shield-check text-success"></i> 
-                        <span class="d-mobile-none">Triage Seguro - Selecciones Predefinidas</span>
-                        <span class="d-xl-none">Triage Seguro</span>
+                        <i class="bi bi-clipboard-heart text-primary"></i> 
+                        Triage - Formulario
                     </h4>
-                    <small class="text-success fw-bold">✓ Sin errores de tipeo - Solo rangos clínicos validados</small>
+                </div>
+            </div>
+
+            <!-- 🚨 INTERRUPTOR INTELIGENTE -->
+            <div class="card border-warning mb-4">
+                <div class="card-body p-3 text-center">
+                    <div class="form-check form-switch d-inline-block">
+                        <input class="form-check-input fs-5" type="checkbox" 
+                               role="switch" id="esInconsciente" name="es_inconsciente">
+                        <label class="form-check-label fw-bold fs-6" for="esInconsciente">
+                            🚨 <span class="text-danger">PACIENTE INCONSCIENTE</span>
+                        </label>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        Activar cuando el paciente no puede proporcionar datos
+                    </div>
                 </div>
             </div>
 
@@ -63,7 +77,7 @@
                                 <input type="text" class="form-control form-control-mobile" 
                                        id="nombre" name="nombre" maxlength="100" 
                                        placeholder="Juan Carlos" autocomplete="given-name">
-                                <small class="text-muted">Opcional si paciente inconsciente</small>
+                                <small class="text-muted">Opcional</small>
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="apellido" class="form-label fw-bold">
@@ -72,7 +86,7 @@
                                 <input type="text" class="form-control form-control-mobile" 
                                        id="apellido" name="apellido" maxlength="100" 
                                        placeholder="Pérez" autocomplete="family-name">
-                                <small class="text-muted">Opcional si paciente inconsciente</small>
+                                <small class="text-muted">Opcional</small>
                             </div>
                         </div>
                         
@@ -84,7 +98,7 @@
                                 <input type="number" class="form-control form-control-mobile" 
                                        id="dni" name="dni" inputmode="numeric" 
                                        placeholder="12345678" maxlength="8">
-                                <small class="text-muted">Opcional si inconsciente</small>
+                                <small class="text-muted">Opcional</small>
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="edad" class="form-label fw-bold">
@@ -147,7 +161,7 @@
                                     <option value="22" data-news="2">21-24 resp/min (Alta)</option>
                                     <option value="26" data-news="3">≥25 resp/min (Muy alta)</option>
                                 </select>
-                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                                <small class="text-success">✓ Valores seguros</small>
                             </div>
 
                             <!-- Saturación Oxígeno -->
@@ -164,7 +178,7 @@
                                     <option value="95" data-news="1">94-95% (Límite)</option>
                                     <option value="98" data-news="0">≥96% (Normal)</option>
                                 </select>
-                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                                <small class="text-success">✓ Valores seguros</small>
                             </div>
 
                             <!-- Tensión Sistólica -->
@@ -182,7 +196,7 @@
                                     <option value="130" data-news="0">111-219 mmHg (Normal)</option>
                                     <option value="230" data-news="3">≥220 mmHg (Hipertensión severa)</option>
                                 </select>
-                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                                <small class="text-success">✓ Valores seguros</small>
                             </div>
 
                             <!-- Frecuencia Cardíaca -->
@@ -201,7 +215,7 @@
                                     <option value="130" data-news="2">111-130 lpm (Taquicardia)</option>
                                     <option value="140" data-news="3">≥131 lpm (Taquicardia severa)</option>
                                 </select>
-                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                                <small class="text-success">✓ Valores seguros</small>
                             </div>
 
                             <!-- Temperatura -->
@@ -219,7 +233,7 @@
                                     <option value="39.0" data-news="1">38.1-39.0°C (Fiebre leve)</option>
                                     <option value="40.0" data-news="2">≥39.1°C (Fiebre alta)</option>
                                 </select>
-                                <small class="text-success">✓ Rangos clínicos predefinidos</small>
+                                <small class="text-success">✓ Valores seguros</small>
                             </div>
 
                             <!-- Nivel de Conciencia -->
@@ -235,7 +249,7 @@
                                     <option value="P" data-news="3">P - Responde solo a dolor</option>
                                     <option value="U" data-news="3">U - No responde (inconsciente)</option>
                                 </select>
-                                <small class="text-success">✓ Escala AVPU predefinida</small>
+                                <small class="text-success">✓ Escala AVPU</small>
                             </div>
                         </div>
                     </div>
@@ -292,85 +306,34 @@
 
 <!-- JavaScript para cálculo en tiempo real -->
 <script>
+// 🚀 JAVASCRIPT ULTRA-MINIMALISTA: 15 líneas que hacen TODO
 document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('triageCompletoForm');
-    const signosInputs = form.querySelectorAll('#frecuencia_respiratoria, #saturacion_oxigeno, #tension_sistolica, #frecuencia_cardiaca, #temperatura, #nivel_conciencia');
+    const selects = document.querySelectorAll('select[data-news]');
+    const switchCritico = document.getElementById('esInconsciente');
+    const campos = document.querySelectorAll('#nombre, #apellido, #dni, #edad, #sexo, #motivo_consulta');
     
-    // Función para calcular NEWS Score usando selectores predefinidos
-    function calcularNEWS() {
-        const selectores = ['frecuencia_respiratoria', 'saturacion_oxigeno', 'tension_sistolica', 'frecuencia_cardiaca', 'temperatura', 'nivel_conciencia'];
+    // MEGA-FUNCIÓN: Calculadora + Switch + Validación en 1 
+    function todo() {
+        // 1. Calcular NEWS Score en 1 línea
+        const score = Array.from(selects).reduce((sum, s) => sum + parseInt(s.options[s.selectedIndex]?.dataset.news || 0), 0);
         
-        let score = 0;
-        let todosCompletos = true;
-        
-        // Sumar puntajes NEWS de cada selector
-        for (const selectorId of selectores) {
-            const selector = document.getElementById(selectorId);
-            const selectedOption = selector.options[selector.selectedIndex];
-            
-            if (!selector.value) {
-                todosCompletos = false;
-                continue;
-            }
-            
-            // Obtener puntaje NEWS del atributo data-news
-            const newsScore = parseInt(selectedOption.getAttribute('data-news')) || 0;
-            score += newsScore;
-        }
-        
-        // Si no están todos los campos completos, ocultar resultado
-        if (!todosCompletos) {
-            document.getElementById('resultadoCard').style.display = 'none';
-            return;
-        }
-        
-        // Temperatura
-        if (temp <= 35.0) score += 3;
-        else if (temp <= 36.0) score += 1;
-        else if (temp <= 38.0) score += 0;
-        else if (temp <= 39.0) score += 1;
-        
-        // Determinar nivel de urgencia
-        let nivel, tiempo, colorClass;
-        if (score >= 7) {
-            nivel = 'ROJO';
-            tiempo = 'INMEDIATO';
-            colorClass = 'bg-danger';
-        } else if (score >= 4) {
-            nivel = 'AMARILLO';
-            tiempo = '30 min';
-            colorClass = 'bg-warning text-dark';
-        } else {
-            nivel = 'VERDE';
-            tiempo = '60 min';
-            colorClass = 'bg-success';
-        }
-        
-        // Actualizar UI
+        // 2. Mostrar resultado inmediato
+        const nivel = score >= 7 ? 'ROJO' : score >= 4 ? 'AMARILLO' : 'VERDE';
+        const color = score >= 7 ? 'danger' : score >= 4 ? 'warning' : 'success';
         document.getElementById('newsScore').textContent = score;
         document.getElementById('nivelUrgencia').textContent = nivel;
-        document.getElementById('tiempoAtencion').textContent = tiempo;
-        document.getElementById('resultadoHeader').className = `card-header text-white ${colorClass}`;
-        document.getElementById('resultadoCard').style.display = 'block';
+        document.getElementById('resultadoCard').style.display = score > 0 ? 'block' : 'none';
+        document.getElementById('resultadoHeader').className = `card-header text-white bg-${color}`;
         
-        // Cambiar color del botón según urgencia
-        const btnCompletar = document.getElementById('btnCompletar');
-        btnCompletar.className = `btn btn-mobile w-100 touch-target ${colorClass.replace('bg-', 'btn-')}`;
+        // 3. Switch crítico en 1 línea
+        campos.forEach(c => { c.disabled = switchCritico.checked; c.style.opacity = switchCritico.checked ? '0.6' : '1'; });
+        document.querySelector('.card-body h4').innerHTML = switchCritico.checked ? 
+            '<i class="bi bi-clipboard-heart text-danger"></i> 🚨 TRIAGE CRÍTICO' : 
+            '<i class="bi bi-clipboard-heart text-primary"></i> Triage - Formulario';
     }
     
-    // Agregar listeners a todos los selectores de signos vitales
-    signosInputs.forEach(selector => {
-        selector.addEventListener('change', calcularNEWS);
-    });
-    
-    // Validación del formulario
-    form.addEventListener('submit', function(e) {
-        if (!form.checkValidity()) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        form.classList.add('was-validated');
-    });
+    // 4. UN SOLO LISTENER para TODO
+    document.addEventListener('change', todo);
 });
 </script>
 

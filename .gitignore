@@ -1,86 +1,87 @@
-# Triage Digital - .gitignore optimizado
+# 🏥 TRIAGE DIGITAL - PRODUCCIÓN HOSPITALARIA
+# Configuración para despliegue en máquina del colega
+
+# ============================================
+# ARCHIVOS CRÍTICOS DE PRODUCCIÓN
+# ============================================
+
+# Base de datos hospitalaria (SENSIBLE)
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+*.sqlite3
+*.db
+
+# Archivos de configuración sensibles
+.env
+.env.*
+*.env
+secret_key.txt
+
+# ============================================
+# ARCHIVOS TEMPORALES Y CACHE
+# ============================================
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
 # Django
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-*.sqlite3
-triage_digital.sqlite3
-media/
 staticfiles/
+media/
 logs/
+*.log
 
-# Archivos sensibles
-CREDENCIALES.md
-*.env
-.env.*
-secrets.json
-settings_local.py
+# ============================================
+# ENTORNO DE DESARROLLO
+# ============================================
 
-# IDEs
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDEs y editores
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# Sistema
+# Sistema operativo
 .DS_Store
 Thumbs.db
+*.tmp
 
-# Logs del sistema
-logs/
-*.log
+# ============================================
+# ARCHIVOS DE BACKUP Y TEMPORALES
+# ============================================
 
-# Caché
-.cache/
-.pytest_cache/
-
-# Documentación temporal
-*.docx
-*.doc
-*.pdf
-
-# Respaldos
-*.bak
+# Backups de base de datos
+backup_*.sqlite3
+backup_*.sql
 *.backup
 
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
+# Archivos temporales del sistema
+*.pid
+*.lock
+celerybeat-schedule
+celerybeat.pid
 
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
+# ============================================
+# REPORTES Y EXPORTS (Opcionales)
+# ============================================
 
-# Otros
-.sass-cache/
-node_modules/
+# PDFs generados automáticamente
+reportes_generados/
+*.pdf
+
+# Archivos de demostración (solo para testing)
+demo_data.json
