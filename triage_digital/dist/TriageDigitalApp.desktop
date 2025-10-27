@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Triage Digital
+Comment=Sistema de Clasificación Hospitalaria
+Exec=sh -c "$(dirname %k)/launch_triage.sh"
+Icon=applications-health
+Terminal=false
+Type=Application
+Categories=Utility;Health;
