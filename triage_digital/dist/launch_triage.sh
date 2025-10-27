@@ -4,11 +4,11 @@
 # Autor: Gonzalo Lamas
 # --------------------------------------------------------
 
-# Obtener el directorio del script
-APP_DIR="$(dirname "$(realpath "$0")")"
+# Ir al directorio donde está el script
+cd "$(dirname "$0")"
 
-# Ejecutar el binario
-"$APP_DIR/TriageDigitalApp" &
+# Ejecutar el binario sin autoreload
+./TriageDigitalApp runserver 0.0.0.0:8000 --noreload &
 
 # Esperar unos segundos a que el servidor arranque
 sleep 3
