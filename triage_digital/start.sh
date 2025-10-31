@@ -24,15 +24,15 @@ if [[ "$1" == "prod" ]]; then
     HOST="0.0.0.0"
 elif [[ "$1" == "red" ]]; then
     MODO="RED HOSPITALARIA"
-    PUERTO=8000
+    PUERTO=8001
     HOST="0.0.0.0"
 elif [[ "$1" == "demo" ]]; then
     MODO="DEMO HOSPITALARIA"
-    PUERTO=8000
+    PUERTO=8001
     HOST="127.0.0.1"
 else
     MODO="DESARROLLO"
-    PUERTO=8000
+    PUERTO=8001
     HOST="127.0.0.1"
 fi
 
@@ -72,7 +72,7 @@ echo "👤 Admin: admin / 123456"
 echo "🏥 Login: DNI + contraseña"
 echo ""
 echo "💡 Ctrl+C para detener"
-echo "🔗 Admin panel: http://$HOST:$PUERTO/admin/"
+echo "🔗 Admin panel: http://$HOST:$PUERTO/login/"
 echo ""
 
 # 5. Iniciar servidor
