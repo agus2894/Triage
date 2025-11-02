@@ -25,15 +25,17 @@ INSTALLED_APPS = [
     'apps.triage',
 ]
 
-# Middleware optimizado - Solo lo necesario
+# Middleware AUTO-OPTIMIZADO - Optimización transparente automática
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.triage.middleware.SmartCacheMiddleware',  # Cache inteligente automático
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.triage.middleware.AutoOptimizationMiddleware',  # Optimización automática
 ]
 
 # Configuraciones de seguridad para producción
@@ -44,6 +46,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 año
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = False  # En hospital puede no tener SSL interno
 
 ROOT_URLCONF = 'config.urls'
 
@@ -65,12 +68,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Base de datos optimizada para triage médico
+# Base de datos AUTO-OPTIMIZADA para triage médico crítico
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db' / 'triage_digital.sqlite3',
-        # SQLite es simple y rápido - perfecto para triage hospitalario
+        # AUTO-OPTIMIZACIÓN: Configuraciones aplicadas automáticamente al conectar
+        'OPTIONS': {
+            'init_command': """
+                PRAGMA journal_mode=WAL;
+                PRAGMA synchronous=NORMAL;
+                PRAGMA cache_size=20000;
+                PRAGMA temp_store=MEMORY;
+                PRAGMA mmap_size=268435456;
+                PRAGMA foreign_keys=ON;
+                PRAGMA auto_vacuum=INCREMENTAL;
+                PRAGMA wal_autocheckpoint=1000;
+                PRAGMA optimize;
+            """,
+            # Timeout más largo para operaciones intensivas
+            'timeout': 30,
+        },
+        'TEST': {
+            'NAME': ':memory:',  # Tests en memoria para velocidad máxima
+        }
     }
 }
 
@@ -83,17 +104,25 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-LOGIN_URL = '/login/'
-
 # Cache optimizado para consultas críticas de triage
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'triage-emergency-cache',
-        'TIMEOUT': 180,  # 3 minutos - datos críticos, cache corto
+        'TIMEOUT': 300,  # 5 minutos - balance entre velocidad y actualización
         'OPTIONS': {
-            'MAX_ENTRIES': 2000,  # Más entradas para hospital activo
+            'MAX_ENTRIES': 5000,  # Más entradas para hospital activo
             'CULL_FREQUENCY': 3,   # Limpiar cache más frecuentemente
+        }
+    },
+    # Cache específico para estadísticas que pueden ser menos críticas
+    'stats': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'triage-stats-cache',
+        'TIMEOUT': 900,  # 15 minutos para estadísticas
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 4,
         }
     }
 }
@@ -109,7 +138,60 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/triage/'
 LOGOUT_REDIRECT_URL = '/login/'
 
-# Sesiones optimizadas para uso hospitalario
+# Sesiones optimizadas para uso hospitalario intensivo
 SESSION_COOKIE_AGE = 28800  # 8 horas - turno hospitalario típico
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = False  # Solo guardar cuando cambie
+SESSION_CACHE_ALIAS = 'default'  # Usar cache para sesiones rápidas
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Cache + DB híbrido
+
+# Configuración de logging optimizada para producción
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'WARNING',  # Solo errores importantes en producción
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'triage.log',
+            'maxBytes': 10485760,  # 10MB
+            'backupCount': 5,
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'ERROR',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'apps.triage': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Crear directorio de logs si no existe
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)

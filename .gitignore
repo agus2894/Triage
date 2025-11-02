@@ -1,29 +1,37 @@
-# 🏥 TRIAGE DIGITAL - PRODUCCIÓN HOSPITALARIA
-# Configuración para despliegue en máquina del colega
+# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO
+# Configuración profesional para despliegue médico
 
 # ============================================
-# ARCHIVOS CRÍTICOS DE PRODUCCIÓN
+# 🔒 DATOS SENSIBLES (NUNCA SUBIR)
 # ============================================
 
-# Base de datos hospitalaria (SENSIBLE)
+# Base de datos hospitalaria (INFORMACIÓN MÉDICA CONFIDENCIAL)
 db.sqlite3
 db.sqlite3-journal
 db.sqlite3-wal
 db.sqlite3-shm
 *.sqlite3
 *.db
+triage_digital.sqlite3
 
-# Archivos de configuración sensibles
+# Archivos de configuración con secrets
 .env
 .env.*
 *.env
 secret_key.txt
+config/secrets.py
+
+# Logs del sistema (pueden contener información sensible)
+logs/
+*.log
+django.log
+triage.log
 
 # ============================================
-# ARCHIVOS TEMPORALES Y CACHE
+# 🐍 PYTHON Y DJANGO
 # ============================================
 
-# Python
+# Python cache y compilados
 __pycache__/
 *.py[cod]
 *.pyo
@@ -31,15 +39,16 @@ __pycache__/
 *.so
 *.egg-info/
 *.egg
+.pytest_cache/
 
-# Django
+# Django específico
 staticfiles/
+static_collected/
 media/
-logs/
-*.log
+migrations/__pycache__/
 
 # ============================================
-# ENTORNO DE DESARROLLO
+# 🔧 ENTORNO DE DESARROLLO
 # ============================================
 
 # Virtual environments
@@ -47,6 +56,8 @@ venv/
 .venv/
 env/
 ENV/
+.env/
+virtualenv/
 
 # IDEs y editores
 .vscode/
@@ -54,34 +65,91 @@ ENV/
 *.swp
 *.swo
 *~
+.sublime-*
 
-# Sistema operativo
+# ============================================
+# 💻 SISTEMA OPERATIVO
+# ============================================
+
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
 Thumbs.db
-*.tmp
+ehthumbs.db
+Desktop.ini
+*.lnk
+
+# Linux
+*~
+.directory
 
 # ============================================
-# ARCHIVOS DE BACKUP Y TEMPORALES
+# 📊 REPORTES Y ARCHIVOS GENERADOS
 # ============================================
+
+# PDFs generados (se regeneran automáticamente)
+reportes_generados/
+reporte_*.pdf
+triage_*.pdf
 
 # Backups de base de datos
 backup_*.sqlite3
 backup_*.sql
 *.backup
-
-# Archivos temporales del sistema
-*.pid
-*.lock
-celerybeat-schedule
-celerybeat.pid
+*.dump
 
 # ============================================
-# REPORTES Y EXPORTS (Opcionales)
+# 🔨 BUILD Y DISTRIBUCIÓN
 # ============================================
 
-# PDFs generados automáticamente
-reportes_generados/
-*.pdf
+# PyInstaller
+build/
+dist/
+*.spec
+
+# ============================================
+# 🧪 TESTING Y DESARROLLO
+# ============================================
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Testing
+.tox/
+.pytest_cache/
+*.cover
 
 # Archivos de demostración (solo para testing)
 demo_data.json
+test_*.sqlite3
+
+# ============================================
+# ⚡ PERFORMANCE Y CACHE
+# ============================================
+
+# Redis/Cache
+dump.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Archivos temporales
+*.tmp
+*.temp
+*.pid
+*.lock
+
+# ============================================
+# 📝 DOCUMENTACIÓN TEMPORAL
+# ============================================
+
+# Documentación autogenerada
+docs/_build/
+site/
