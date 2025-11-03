@@ -10,7 +10,7 @@
         <div>
             <h1 class="h3 h1-md mb-1">
                 <i class="bi bi-speedometer2"></i> 
-                <span class="d-mobile-none">Dashboard Médico</span>
+                <span class="d-mobile-none">Panel de Control</span>
                 <span class="d-md-none">Dashboard</span>
             </h1>
             {% if profesional %}
@@ -24,7 +24,7 @@
         </div>
         <div class="text-end">
             <small class="text-muted d-block">{{ "now"|date:"H:i" }}</small>
-            <small class="badge bg-success d-mobile-none">Optimizado</small>
+            <small class="badge bg-success d-mobile-none"></small>
             {% if profesional.puede_descargar_reportes %}
             <div class="mt-1">
                 <a href="{% url 'triage:reporte_diario' %}" class="btn btn-sm btn-outline-primary" target="_blank" title="Descargar reporte diario con detalles por profesional">
@@ -87,8 +87,8 @@
             <div class="d-grid">
                 <a href="{% url 'triage:reporte_diario' %}" class="btn btn-info btn-lg btn-mobile touch-target">
                     <i class="bi bi-file-earmark-pdf me-2"></i>
-                    <span class="d-mobile-none">📊 Generar Reporte PDF Diario</span>
-                    <span class="d-md-none">📊 Reporte PDF</span>
+                    <span class="d-mobile-none">📊 Generar Reporte Diario</span>
+                    <span class="d-md-none">📊 Reporte Diario</span>
                 </a>
             </div>
         </div>
@@ -102,10 +102,10 @@
             <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
                 <h5 class="mb-0">
                     <i class="bi bi-clipboard2-pulse"></i> 
-                    <span class="d-mobile-none">🩺 Triage Completo con Calculadora NEWS</span>
+                    <span class="d-mobile-none">🩺 Triage Completo </span>
                     <span class="d-lg-none">🩺 Nuevo Triage</span>
                 </h5>
-                <span class="badge bg-light text-primary">Sistema Inteligente</span>
+                <span class="badge bg-light text-primary">Sistema NEWS</span>
             </div>
             <div class="card-body p-2 p-md-3">
                 
@@ -204,7 +204,6 @@
                                 </div>
                             </div>
 
-                            <!-- Signos vitales en formato compacto - 3 columnas para mejor aprovechamiento -->
                             <div class="row g-2">
                                 
                                 <!-- Frecuencia Respiratoria -->
