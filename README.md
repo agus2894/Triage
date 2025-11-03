@@ -25,12 +25,29 @@ pip install -r requirements.txt
 # 4. Configurar sistema automáticamente
 python manage.py migrate
 
-# 5. Iniciar servidor
+# 5. 🔑 CREAR USUARIO ADMINISTRADOR (OBLIGATORIO)
+python manage.py setup_admin
+
+# 6. Iniciar servidor
 python manage.py runserver
 
 ## 🔑 **CREDENCIALES DE ACCESO**
 
-### **�‍⚕️ ENFERMERO TRIAJERO** (Solo triage)
+> **⚠️ IMPORTANTE**: Después de clonar el proyecto, **SIEMPRE** ejecutar `python manage.py setup_admin` para crear los usuarios del sistema.
+
+### **📋 SETUP PARA NUEVOS DESARROLLADORES**
+
+```bash
+# Después de instalar dependencias y migrar:
+python manage.py setup_admin
+
+# ✅ Este comando crea automáticamente:
+# - Usuario admin para Django Admin
+# - Usuario administrador del sistema hospitalario  
+# - Perfil profesional asociado
+```
+
+### **👨‍⚕️ ENFERMERO TRIAJERO** (Solo triage)
 - **URL**: http://127.0.0.1:8000/triage/
 - **DNI**: `38046539`
 - **Contraseña**: `123456`
@@ -46,6 +63,26 @@ python manage.py runserver
 - **URL**: http://127.0.0.1:8000/admin/
 - **Usuario**: `admin`
 - **Contraseña**: `123456`
+
+---
+
+---
+
+## 🗄️ **CONFIGURACIÓN DE BASE DE DATOS**
+
+### **📂 Base de Datos Local**
+- **Archivo**: `triage_digital/db/triage_digital.sqlite3`
+- **Estado**: ❌ **NO está en Git** (buena práctica)
+- **Cada desarrollador**: Tiene su propia BD local
+- **Datos**: Se crean con `migrate` y `setup_admin`
+
+### **🔄 Flujo para Nuevos Colegas**
+```bash
+git clone [repo]          # Solo código fuente
+python manage.py migrate  # Crea tu BD local
+python manage.py setup_admin  # Crea usuarios
+# ¡Listo para trabajar!
+```
 
 ---
 
