@@ -11,8 +11,9 @@ class Profesional(models.Model):
     """Profesional médico (médico o enfermero) autorizado para usar el sistema."""
     
     TIPO_CHOICES = [
+        ('enfermero', 'Enfermero Triajero'),
         ('medico', 'Médico'),
-        ('enfermero', 'Enfermero'),
+        ('administrador', 'Administrador'),
     ]
     
     user = models.OneToOneField(
@@ -29,8 +30,9 @@ class Profesional(models.Model):
     )
     
     tipo = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=TIPO_CHOICES,
+        default='enfermero',
         verbose_name="Tipo de Profesional"
     )
     
@@ -51,6 +53,27 @@ class Profesional(models.Model):
         auto_now_add=True,
         verbose_name="Fecha de Registro"
     )
+
+    def puede_descargar_reportes(self):
+        """🔒 Control de permisos: Solo administradores pueden descargar PDFs."""
+        return self.tipo in ['administrador', 'medico']
+    
+    def puede_gestionar_usuarios(self):
+        """🔒 Control de permisos: Solo administradores pueden gestionar usuarios."""
+        return self.tipo == 'administrador'
+    
+    def puede_realizar_triage(self):
+        """🔒 Control de permisos: Todos pueden realizar triage."""
+        return self.activo
+    
+    def get_permisos_descripcion(self):
+        """Devuelve descripción de permisos según el tipo de usuario."""
+        permisos = {
+            'enfermero': '👩‍⚕️ Realizar triage, ver pacientes en espera',
+            'medico': '👨‍⚕️ Realizar triage, descargar reportes PDF',
+            'administrador': '🔧 Todos los permisos: triage, reportes, gestión de usuarios'
+        }
+        return permisos.get(self.tipo, 'Sin permisos definidos')
     
     class Meta:
         verbose_name = "Profesional"
@@ -180,6 +203,10 @@ class SignosVitales(models.Model):
             models.Index(fields=['paciente', '-fecha_hora'], name='idx_paciente_fecha'),
             models.Index(fields=['profesional', '-fecha_hora'], name='idx_profesional_fecha'),
             models.Index(fields=['nivel_urgencia', '-fecha_hora'], name='idx_urgencia_fecha'),
+            # Índice para estadísticas rápidas por fecha y nivel
+            models.Index(fields=['fecha_hora', 'nivel_urgencia'], name='idx_fecha_nivel'),
+            # Índice para casos críticos
+            models.Index(fields=['nivel_urgencia', 'paciente'], name='idx_triage_critico'),
         ]
         
     def __str__(self):
@@ -192,11 +219,17 @@ class SignosVitales(models.Model):
     
     def calcular_puntaje_news(self):
         """
-        Calcula el puntaje NEWS basado en los signos vitales.
+        Calcula el puntaje NEWS basado en los signos vitales - OPTIMIZADO.
         
         Returns:
             dict: Resultado del cálculo NEWS
         """
+        # Cache del cálculo para evitar recalcular si no cambió
+        cache_key = f"news_{self.id}_{hash((self.frecuencia_respiratoria, self.saturacion_oxigeno, self.tension_sistolica, self.frecuencia_cardiaca, self.nivel_conciencia, float(self.temperatura)))}"
+        
+        if hasattr(self, '_news_cache') and self._news_cache.get('key') == cache_key:
+            return self._news_cache['result']
+        
         from .utils import CalculadoraNEWS  # Import lazy para evitar circular imports
         
         datos_signos_vitales = {
@@ -208,7 +241,12 @@ class SignosVitales(models.Model):
             'temperatura': self.temperatura,
         }
         
-        return CalculadoraNEWS.calcular_puntaje_total(datos_signos_vitales)
+        result = CalculadoraNEWS.calcular_puntaje_total(datos_signos_vitales)
+        
+        # Cache del resultado
+        self._news_cache = {'key': cache_key, 'result': result}
+        
+        return result
     
     def save(self, *args, **kwargs):
         """
@@ -225,3 +263,57 @@ class SignosVitales(models.Model):
         
         # Guardar con triage calculado
         super().save(*args, **kwargs)
+
+    def calcular_prioridad_critica(self):
+        """
+        🚨 SISTEMA DE PRIORIZACIÓN ENTRE CÓDIGOS ROJOS
+        
+        Calcula prioridad numérica cuando hay múltiples pacientes críticos.
+        Criterios médicos en orden de importancia:
+        1. NEWS Score más alto (más crítico)
+        2. Tiempo de espera (más tiempo = más prioritario)
+        3. Edad avanzada (>65 años tiene prioridad)
+        4. Signos vitales críticos específicos
+        
+        Returns:
+            int: Puntaje de prioridad (mayor = más prioritario)
+        """
+        if self.nivel_urgencia != 'ROJO':
+            return 0  # Solo para códigos rojos
+            
+        prioridad = 0
+        
+        # 1. NEWS Score (peso 100) - Más crítico = más prioritario
+        prioridad += self.news_score * 100
+        
+        # 2. Tiempo de espera (peso 10) - Más tiempo = más prioritario
+        tiempo_espera_mins = self.paciente.tiempo_espera_minutos
+        if tiempo_espera_mins > 30:  # Después de 30 min es crítico
+            prioridad += (tiempo_espera_mins - 30) * 10
+            
+        # 3. Edad avanzada (peso 50)
+        if self.paciente.edad and self.paciente.edad > 65:
+            prioridad += 50
+            
+        # 4. Signos vitales ultra-críticos (peso 200)
+        # Saturación O2 muy baja
+        if self.saturacion_oxigeno < 85:
+            prioridad += 200
+            
+        # Tensión muy baja (shock)
+        if self.tension_sistolica < 80:
+            prioridad += 150
+            
+        # Frecuencia cardíaca crítica
+        if self.frecuencia_cardiaca > 140 or self.frecuencia_cardiaca < 40:
+            prioridad += 150
+            
+        # Nivel de conciencia alterado
+        if self.nivel_conciencia in ['P', 'U']:  # Pain o Unresponsive
+            prioridad += 250
+            
+        # Temperatura crítica
+        if self.temperatura > 40.0 or self.temperatura < 34.0:
+            prioridad += 100
+            
+        return prioridad

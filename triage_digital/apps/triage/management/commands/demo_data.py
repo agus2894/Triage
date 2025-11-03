@@ -78,7 +78,6 @@ class Command(BaseCommand):
                 apellido=p_data['apellido'],
                 dni=p_data['dni'],
                 edad=p_data['edad'],
-                sexo=p_data['sexo'],
                 motivo_consulta=p_data['motivo']
             )
 

@@ -48,9 +48,16 @@ python3 manage.py migrate --verbosity=0 > /dev/null 2>&1
 echo "👤 Configurando administrador..."
 python3 manage.py setup_admin > /dev/null 2>&1
 
-# 3. Optimización (silencioso)  
-echo "⚡ Optimizando sistema..."
+# 3. OPTIMIZACIÓN AUTOMÁTICA INTEGRADA (NUEVO)
+echo "⚡ Auto-optimizando sistema..."
 python3 manage.py optimize_db --verbosity=0 > /dev/null 2>&1
+
+# 4. Verificar si necesita limpieza automática
+DB_SIZE=$(du -k db/triage_digital.sqlite3 2>/dev/null | cut -f1)
+if [ ! -z "$DB_SIZE" ] && [ "$DB_SIZE" -gt 50000 ]; then  # >50MB
+    echo "🧹 Optimizando datos antiguos..."
+    python3 manage.py cleanup_old_data --days=180 > /dev/null 2>&1
+fi
 
 # 3.5. Datos demo si es modo demo
 if [[ "$1" == "demo" ]]; then

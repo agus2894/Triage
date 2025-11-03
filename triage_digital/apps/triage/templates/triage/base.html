@@ -52,11 +52,6 @@
                     <a class="nav-link" href="{% url 'triage:dashboard' %}">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
-                    <a class="nav-link touch-target" href="{% url 'triage:triage_completo' %}">
-                        <i class="bi bi-clipboard-plus"></i> 
-                        <span class="d-mobile-none">Triage Completo</span>
-                        <span class="d-md-none">Triage</span>
-                    </a>
                     <button class="nav-link touch-target btn btn-link d-lg-none text-start" type="button" 
                             data-bs-toggle="offcanvas" data-bs-target="#sidebarMovil">
                         <i class="bi bi-people"></i> 
@@ -227,12 +222,16 @@
                         const nivelColor = paciente.nivel_urgencia === 'ROJO' ? 'danger' : 
                                           paciente.nivel_urgencia === 'AMARILLO' ? 'warning' : 'success';
                         
+                        // 🚨 Indicador de prioridad crítica para códigos rojos
+                        const prioridadIndicador = paciente.nivel_urgencia === 'ROJO' && paciente.prioridad_critica > 0 ? 
+                            `<span class="badge bg-danger-dark small ms-1">⚡ P${Math.floor(paciente.prioridad_critica/100)}</span>` : '';
+                        
                         html += `
                             <div class="card card-sm mb-2 border-${nivelColor}" id="paciente-${paciente.id}">
                                 <div class="card-body p-2">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="flex-grow-1">
-                                            <h6 class="card-title mb-1 small">${paciente.nombre_completo}</h6>
+                                            <h6 class="card-title mb-1 small">${paciente.nombre_completo}${prioridadIndicador}</h6>
                                             <div class="small text-muted mb-1">
                                                 ${paciente.dni ? 'DNI: ' + paciente.dni : 'Sin DNI'}
                                                 ${paciente.edad ? ' | ' + paciente.edad + ' años' : ''}
@@ -318,13 +317,20 @@
                         setTimeout(() => tarjeta.remove(), 300);
                     }
                     
-                    // Recargar datos para asegurar consistencia
-                    setTimeout(cargarPacientes, 1000);
+                    // 🚀 ACTUALIZACIÓN INMEDIATA Y EFICIENTE
                     
-                    // Si estamos en dashboard, recargar para actualizar estadísticas
-                    if (window.location.pathname.includes('/triage/') && !window.location.pathname.includes('/triage-completo/')) {
-                        setTimeout(() => window.location.reload(), 1500);
+                    // 1. Recargar lista de pacientes inmediatamente
+                    cargarPacientes();
+                    
+                    // 2. Actualizar estadísticas del dashboard si estamos en él
+                    if (window.location.pathname.includes('/triage/dashboard/') || 
+                        window.location.pathname === '/triage/') {
+                        actualizarEstadisticasDashboard();
                     }
+                    
+                    // 3. Actualizar contador de pacientes
+                    actualizarContadorPacientes();
+                    
                 } else {
                     mostrarMensaje(`❌ Error: ${data.error}`, 'error');
                     // Rehabilitar botones
@@ -418,6 +424,82 @@
                     localStorage.setItem('pwa-banner-shown', 'true');
                 }
             }, 10000);
+        }
+        
+        // 🚀 FUNCIONES DE ACTUALIZACIÓN EFICIENTE POST-ATENCIÓN
+        
+        // Actualizar estadísticas del dashboard sin recargar página
+        function actualizarEstadisticasDashboard() {
+            
+            fetch('/triage/api/estadisticas-dashboard/')
+                .then(response => response.json())
+                .then(data => {
+                    
+                    // Actualizar cards de estadísticas
+                    const rojosElement = document.querySelector('.card.border-danger .h2-md, .card.border-danger .h4');
+                    const amarillosElement = document.querySelector('.card.border-warning .h2-md, .card.border-warning .h4');
+                    const verdesElement = document.querySelector('.card.border-success .h2-md, .card.border-success .h4');
+                    const totalElement = document.querySelector('.card.border-info .h2-md, .card.border-info .h4');
+                    
+                    if (rojosElement) rojosElement.textContent = data.rojos || 0;
+                    if (amarillosElement) amarillosElement.textContent = data.amarillos || 0;
+                    if (verdesElement) verdesElement.textContent = data.verdes || 0;
+                    if (totalElement) totalElement.textContent = data.total || 0;
+                    
+                    // Actualizar alerta crítica
+                    const alertaCritica = document.querySelector('.alert.alert-danger');
+                    if (data.rojos > 0) {
+                        if (!alertaCritica) {
+                            // Crear alerta si no existe
+                            const alertaHTML = `
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <strong>¡ATENCIÓN!</strong> Hay ${data.rojos} caso${data.rojos > 1 ? 's' : ''} crítico${data.rojos > 1 ? 's' : ''} que requieren atención inmediata.
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            `;
+                            const container = document.querySelector('.mobile-dashboard');
+                            if (container) {
+                                container.insertAdjacentHTML('afterbegin', alertaHTML);
+                            }
+                        } else {
+                            // Actualizar alerta existente
+                            alertaCritica.innerHTML = `
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>¡ATENCIÓN!</strong> Hay ${data.rojos} caso${data.rojos > 1 ? 's' : ''} crítico${data.rojos > 1 ? 's' : ''} que requieren atención inmediata.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                        }
+                    } else if (alertaCritica) {
+                        // Remover alerta si no hay casos críticos
+                        alertaCritica.remove();
+                    }
+                    
+                })
+                .catch(error => {
+                    console.error('❌ Error actualizando estadísticas:', error);
+                });
+        }
+        
+        // Actualizar contador de pacientes en sidebar
+        function actualizarContadorPacientes() {
+            
+            // Contar pacientes actuales en el DOM
+            const pacientesEnSidebar = document.querySelectorAll('#panel-pacientes .card').length;
+            const pacientesEnMobile = document.querySelectorAll('#panel-pacientes-mobile .card').length;
+            
+            const totalPacientes = Math.max(pacientesEnSidebar, pacientesEnMobile);
+            
+            // Actualizar contadores
+            const contador = document.getElementById('contador-pacientes');
+            const contadorMobile = document.getElementById('contador-pacientes-mobile');
+            
+            if (contador) {
+                contador.textContent = totalPacientes;
+            }
+            if (contadorMobile) {
+                contadorMobile.textContent = totalPacientes;
+            }
         }
     </script>
 

@@ -7,14 +7,31 @@
 <div class="mobile-dashboard">
     <!-- Header responsive -->
     <div class="d-flex justify-content-between align-items-center py-2 py-md-3">
-        <h1 class="h3 h1-md">
-            <i class="bi bi-speedometer2"></i> 
-            <span class="d-mobile-none">Dashboard Médico</span>
-            <span class="d-md-none">Dashboard</span>
-        </h1>
+        <div>
+            <h1 class="h3 h1-md mb-1">
+                <i class="bi bi-speedometer2"></i> 
+                <span class="d-mobile-none">Dashboard Médico</span>
+                <span class="d-md-none">Dashboard</span>
+            </h1>
+            {% if profesional %}
+            <div class="small text-muted">
+                🔒 <strong>{{ profesional.get_tipo_display }}</strong> - {{ profesional.user.get_full_name|default:profesional.user.username }}
+                {% if profesional.puede_descargar_reportes %}
+                    <span class="badge bg-primary ms-1">📊 Reportes</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
         <div class="text-end">
             <small class="text-muted d-block">{{ "now"|date:"H:i" }}</small>
             <small class="badge bg-success d-mobile-none">Optimizado</small>
+            {% if profesional.puede_descargar_reportes %}
+            <div class="mt-1">
+                <a href="{% url 'triage:reporte_diario' %}" class="btn btn-sm btn-outline-primary" target="_blank" title="Descargar reporte diario con detalles por profesional">
+                    <i class="bi bi-download"></i> <span class="d-none d-md-inline">Reporte PDF</span>
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -27,202 +44,418 @@
 </div>
 {% endif %}
 
-    <!-- Estadísticas críticas responsive -->
-    <div class="row mb-3 mb-md-4 g-2 g-md-3">
-        <div class="col-6 col-md-3">
-            <div class="card border-danger card-mobile">
-                <div class="card-body text-center p-2 p-md-3">
-                    <h3 class="h4 h2-md text-danger mb-1">{{ estadisticas.rojos|default:0 }}</h3>
-                    <p class="card-text mb-1"><strong>CRÍTICOS</strong></p>
-                    <small class="text-muted d-mobile-none">Atención inmediata</small>
+    <!-- Estadísticas compactas - Optimizadas para formulario -->
+    <div class="row mb-2 g-1 g-md-2">
+        <div class="col-3">
+            <div class="card border-danger card-mobile text-center">
+                <div class="card-body p-2">
+                    <h4 class="h3 text-danger mb-0">{{ estadisticas.rojos|default:0 }}</h4>
+                    <small class="fw-bold">CRÍTICOS</small>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-warning card-mobile">
-                <div class="card-body text-center p-2 p-md-3">
-                    <h3 class="h4 h2-md text-warning mb-1">{{ estadisticas.amarillos|default:0 }}</h3>
-                    <p class="card-text mb-1"><strong>URGENTES</strong></p>
-                    <small class="text-muted d-mobile-none">30 min máximo</small>
+        <div class="col-3">
+            <div class="card border-warning card-mobile text-center">
+                <div class="card-body p-2">
+                    <h4 class="h3 text-warning mb-0">{{ estadisticas.amarillos|default:0 }}</h4>
+                    <small class="fw-bold">URGENTES</small>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-success card-mobile">
-                <div class="card-body text-center p-2 p-md-3">
-                    <h3 class="h4 h2-md text-success mb-1">{{ estadisticas.verdes|default:0 }}</h3>  
-                    <p class="card-text mb-1"><strong>RUTINARIOS</strong></p>
-                    <small class="text-muted d-mobile-none">60 min máximo</small>
+        <div class="col-3">
+            <div class="card border-success card-mobile text-center">
+                <div class="card-body p-2">
+                    <h4 class="h3 text-success mb-0">{{ estadisticas.verdes|default:0 }}</h4>  
+                    <small class="fw-bold">RUTINARIOS</small>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="card border-info card-mobile">
-                <div class="card-body text-center p-2 p-md-3">
-                    <h3 class="h4 h2-md text-info mb-1">{{ estadisticas.total|default:0 }}</h3>
-                    <p class="card-text mb-1"><strong>TOTAL</strong></p>
-                    <small class="text-muted d-mobile-none">Últimas 24h</small>  
+        <div class="col-3">
+            <div class="card border-info card-mobile text-center">
+                <div class="card-body p-2">
+                    <h4 class="h3 text-info mb-0">{{ estadisticas.total|default:0 }}</h4>
+                    <small class="fw-bold">TOTAL</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Acción rápida: Triage completo -->
+    <!-- Acción rápida: Reporte PDF - Solo para administradores -->
+    {% if profesional.puede_descargar_reportes %}
     <div class="row mb-3 mb-md-4">
-        <div class="col-12 col-md-8">
-            <div class="d-grid">
-                <a href="{% url 'triage:triage_completo' %}" class="btn btn-success btn-lg btn-mobile touch-target">
-                    <i class="bi bi-clipboard-plus me-2"></i>
-                    <span class="d-mobile-none">Nuevo Triage Completo - Todo en Una Página</span>
-                    <span class="d-md-none">Nuevo Triage</span>
-                </a>
-            </div>
-        </div>
-        <div class="col-12 col-md-4 mt-2 mt-md-0">
+        <div class="col-12 col-lg-6 mx-auto">
             <div class="d-grid">
                 <a href="{% url 'triage:reporte_diario' %}" class="btn btn-info btn-lg btn-mobile touch-target">
                     <i class="bi bi-file-earmark-pdf me-2"></i>
-                    <span class="d-mobile-none">📊 Reporte PDF</span>
-                    <span class="d-md-none">📊 PDF</span>
+                    <span class="d-mobile-none">📊 Generar Reporte PDF Diario</span>
+                    <span class="d-md-none">📊 Reporte PDF</span>
                 </a>
             </div>
         </div>
     </div>
+    {% endif %}
 
 <div class="row">
-    <!-- Casos críticos responsive -->
-    <div class="col-lg-8">
+    <!-- FORMULARIO TRIAGE COMPLETO - ANCHO COMPLETO PARA MEJOR VISIBILIDAD -->
+    <div class="col-12">
         <div class="card card-mobile">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    <span class="d-mobile-none">Casos Críticos</span>
-                    <span class="d-lg-none">Críticos</span>
+                    <i class="bi bi-clipboard2-pulse"></i> 
+                    <span class="d-mobile-none">🩺 Triage Completo con Calculadora NEWS</span>
+                    <span class="d-lg-none">🩺 Nuevo Triage</span>
                 </h5>
-                <span class="badge bg-danger">{{ casos_criticos|length }}</span>
+                <span class="badge bg-light text-primary">Sistema Inteligente</span>
             </div>
-            <div class="card-body p-1 p-md-3">
-                {% if casos_criticos %}
+            <div class="card-body p-2 p-md-3">
                 
-                <!-- Vista mobile: Cards -->
-                <div class="d-lg-none mobile-card-stack">
-                    {% for caso in casos_criticos %}
-                    <div class="card triage-{{ caso.nivel_urgencia|lower }} {% if caso.nivel_urgencia == 'ROJO' %}urgente{% endif %}" id="paciente-{{ caso.signos_vitales.paciente.id }}">
+                <!-- Formulario unificado -->
+                <form method="post" class="needs-validation" novalidate id="triageCompletoFormDashboard">
+                    {% csrf_token %}
+                    
+                    <!-- SECCIÓN COMPACTA: DATOS DEL PACIENTE -->
+                    <div class="card mb-3 border-info">
+                        <div class="card-header bg-info text-white py-2">
+                            <h6 class="mb-0">
+                                <i class="bi bi-person-badge"></i> Datos del Paciente
+                            </h6>
+                        </div>
                         <div class="card-body p-3">
-                            <div class="row align-items-center">
-                                <div class="col-8">
-                                    <h6 class="card-title mb-1">{{ caso.signos_vitales.paciente.nombre_completo }}</h6>
-                                    <div class="small text-muted mb-2">
-                                        DNI: {{ caso.signos_vitales.paciente.dni }} | {{ caso.signos_vitales.paciente.edad }} años
-                                    </div>
-                                    <div>
-                                        <span class="badge triage-{{ caso.nivel_urgencia|lower }} me-2">
-                                            {{ caso.nivel_urgencia }}
-                                        </span>
-                                        <span class="badge bg-dark">NEWS: {{ caso.news_score }}</span>
-                                    </div>
-                                    <div class="small mt-1">
-                                        <i class="bi bi-clock"></i> {{ caso.signos_vitales.paciente.tiempo_espera }}
-                                        <span class="text-danger">| Max: {{ caso.tiempo_atencion_max }}min</span>
-                                    </div>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-3">
+                                    <label for="nombre_dash" class="form-label small fw-bold">Nombre</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           id="nombre_dash" name="nombre" maxlength="100" 
+                                           placeholder="Juan Carlos">
+                                    <small class="text-muted">Opcional</small>
                                 </div>
-                                <div class="col-4 text-end">
-                                    <button class="btn btn-success btn-mobile touch-target" 
-                                            onclick="marcarAtendido({{ caso.signos_vitales.paciente.id }}, '{{ caso.signos_vitales.paciente.nombre_completo }}')"
-                                            title="Marcar como atendido">
-                                        <i class="bi bi-check-circle"></i>
-                                    </button>
+                                <div class="col-6 col-md-3">
+                                    <label for="apellido_dash" class="form-label small fw-bold">Apellido</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           id="apellido_dash" name="apellido" maxlength="100" 
+                                           placeholder="Pérez">
+                                    <small class="text-muted">Opcional</small>
                                 </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="dni_dash" class="form-label small fw-bold">DNI</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="dni_dash" name="dni" placeholder="12345678">
+                                    <small class="text-muted">Opcional</small>
+                                </div>
+                                <div class="col-6 col-md-2">
+                                    <label for="edad_dash" class="form-label small fw-bold">Edad</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="edad_dash" name="edad" min="0" max="120" placeholder="45">
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <label for="sexo_dash" class="form-label small fw-bold">Sexo</label>
+                                    <select class="form-control form-control-sm" id="sexo_dash" name="sexo">
+                                        <option value="">-</option>
+                                        <option value="M">M</option>
+                                        <option value="F">F</option>
+                                        <option value="X">X</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <label for="motivo_consulta_dash" class="form-label small fw-bold">Motivo de Consulta</label>
+                                <textarea class="form-control form-control-sm" 
+                                          id="motivo_consulta_dash" name="motivo_consulta" 
+                                          rows="2" maxlength="500" 
+                                          placeholder="Descripción breve del motivo..."></textarea>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Vista desktop: Tabla -->
-                <div class="d-none d-lg-block">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 table-mobile">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Paciente</th>
-                                    <th>DNI</th>
-                                    <th>Urgencia</th>
-                                    <th>NEWS</th>
-                                    <th>Tiempo</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for caso in casos_criticos %}
-                                <tr class="{% if caso.nivel_urgencia == 'ROJO' %}table-danger urgente{% elif caso.nivel_urgencia == 'AMARILLO' %}table-warning{% endif %}" id="paciente-{{ caso.signos_vitales.paciente.id }}">
-                                    <td>
-                                        <strong>{{ caso.signos_vitales.paciente.nombre_completo }}</strong>
-                                        <br><small class="text-muted">{{ caso.signos_vitales.paciente.edad }} años</small>
-                                    </td>
-                                    <td>{{ caso.signos_vitales.paciente.dni }}</td>
-                                    <td>
-                                        <span class="badge triage-{{ caso.nivel_urgencia|lower }}">
-                                            {{ caso.nivel_urgencia }}
-                                        </span>
-                                    </td>
-                                    <td><strong>{{ caso.news_score }}</strong></td>
-                                    <td>
-                                        <small>{{ caso.signos_vitales.paciente.tiempo_espera }}</small>
-                                        <br><span class="text-danger">Max: {{ caso.tiempo_atencion_max }} min</span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-success touch-target" 
-                                                onclick="marcarAtendido({{ caso.signos_vitales.paciente.id }}, '{{ caso.signos_vitales.paciente.nombre_completo }}')"
-                                                title="Marcar como atendido">
-                                            <i class="bi bi-check-circle"></i> Atendido
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% else %}
-                <div class="text-center py-4 text-muted">
-                    <i class="bi bi-check-circle-fill text-success fs-1"></i>
-                    <p>No hay casos críticos pendientes</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
-    <!-- Pacientes recientes -->
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="bi bi-person-plus"></i> Ingresos Recientes</h5>
-            </div>
-            <div class="card-body">
-                {% if pacientes_recientes %}
-                <div class="list-group list-group-flush">
-                    {% for paciente in pacientes_recientes %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>{{ paciente.nombre_completo }}</strong>
-                            <br><small class="text-muted">DNI: {{ paciente.dni }}</small>
-                            <br><small class="text-muted">{{ paciente.fecha_ingreso|timesince }} atrás</small>
+                    <!-- CALCULADORA NEWS COMPACTA -->
+                    <div class="card mb-3 border-warning">
+                        <div class="card-header bg-warning text-dark py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-calculator"></i> Calculadora NEWS
+                                </h6>
+                                <div id="resultado-rapido" class="d-none">
+                                    <span id="puntaje-rapido" class="badge bg-secondary">--</span>
+                                    <span id="color-rapido" class="badge bg-secondary ms-1">--</span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <a href="{% url 'triage:triage_completo' %}" 
-                               class="btn btn-sm btn-success" 
-                               title="Cargar signos vitales en vista única">
-                                <i class="bi bi-plus-lg"></i>
-                            </a>
+                        <div class="card-body p-2">
+                            
+                            <!-- Resultado en tiempo real -->
+                            <div class="panel-resultado-mini p-2 rounded text-center bg-light mb-3">
+                                <div class="row align-items-center">
+                                    <div class="col-md-4">
+                                        <div id="colorResultadoMiniDash" class="color-resultado-mini bg-secondary text-white rounded p-2 small">
+                                            <span id="textoColorMiniDash">Selecciona valores</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div id="puntajeTotalMiniDash" class="h4 text-muted">--</div>
+                                        <small class="text-muted">Puntaje NEWS</small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div id="tiempoAtencionMiniDash" class="d-none">
+                                            <div id="textoTiempoMiniDash" class="fw-bold small"></div>
+                                            <small class="text-muted">Tiempo máximo</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Signos vitales en formato compacto - 3 columnas para mejor aprovechamiento -->
+                            <div class="row g-2">
+                                
+                                <!-- Frecuencia Respiratoria -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-lungs text-info"></i> Freq. Respiratoria
+                                            <span id="puntaje-frecuencia_respiratoria-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="frecuencia_respiratoria">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="8" data-puntaje="3">
+                                                        ≤8 <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="10" data-puntaje="1">
+                                                        9-11 <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="16" data-puntaje="0">
+                                                        12-20 <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="23" data-puntaje="2">
+                                                        21-24 <small>(2)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="25" data-puntaje="3">
+                                                ≥25 <small>(3)</small>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Saturación Oxígeno -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-droplet text-primary"></i> Sat. Oxígeno
+                                            <span id="puntaje-saturacion_oxigeno-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="saturacion_oxigeno">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="91" data-puntaje="3">
+                                                        ≤91% <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="92" data-puntaje="2">
+                                                        92-93% <small>(2)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="94" data-puntaje="1">
+                                                        94-95% <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="98" data-puntaje="0">
+                                                        ≥96% <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Presión Arterial -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-heart-pulse text-danger"></i> P.A. Sistólica
+                                            <span id="puntaje-tension_sistolica-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="tension_sistolica">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="90" data-puntaje="3">
+                                                        ≤90 <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="95" data-puntaje="2">
+                                                        91-100 <small>(2)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="105" data-puntaje="1">
+                                                        101-110 <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="120" data-puntaje="0">
+                                                        111-219 <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="220" data-puntaje="3">
+                                                ≥220 <small>(3)</small>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Segunda fila de signos vitales -->
+                            <div class="row g-2 mt-1">
+
+                                <!-- Frecuencia Cardíaca -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-heart text-danger"></i> Freq. Cardíaca
+                                            <span id="puntaje-frecuencia_cardiaca-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="frecuencia_cardiaca">
+                                            <div class="row g-1">
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="40" data-puntaje="3">
+                                                        ≤40 <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="45" data-puntaje="1">
+                                                        41-50 <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="70" data-puntaje="0">
+                                                        51-90 <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="100" data-puntaje="1">
+                                                        91-110 <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="120" data-puntaje="2">
+                                                        111-130 <small>(2)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-4">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="131" data-puntaje="3">
+                                                        ≥131 <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Nivel de Conciencia -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-eye text-warning"></i> Conciencia (AVPU)
+                                            <span id="puntaje-nivel_conciencia-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="nivel_conciencia">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="A" data-puntaje="0">
+                                                        Alerta <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="V" data-puntaje="3">
+                                                        Voz <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="P" data-puntaje="3">
+                                                        Dolor <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="U" data-puntaje="3">
+                                                        Inconsci. <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Temperatura -->
+                                <div class="col-12 col-lg-4">
+                                    <div class="border rounded p-2 bg-white">
+                                        <label class="form-label small fw-bold mb-1">
+                                            <i class="bi bi-thermometer text-info"></i> Temperatura
+                                            <span id="puntaje-temperatura-display-dash" class="badge bg-secondary ms-1">-</span>
+                                        </label>
+                                        <div class="btn-group-vertical d-grid gap-1" data-signo="temperatura">
+                                            <div class="row g-1">
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="35.0" data-puntaje="3">
+                                                        ≤35° <small>(3)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="35.5" data-puntaje="1">
+                                                        35.1-36° <small>(1)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-success btn-valor btn-sm w-100" data-valor="37.0" data-puntaje="0">
+                                                        36.1-38° <small>(0)</small>
+                                                    </button>
+                                                </div>
+                                                <div class="col-6">
+                                                    <button type="button" class="btn btn-outline-warning btn-valor btn-sm w-100" data-valor="38.5" data-puntaje="2">
+                                                        38.1-39° <small>(2)</small>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-danger btn-valor btn-sm w-100" data-valor="39.1" data-puntaje="3">
+                                                ≥39.1° <small>(3)</small>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Campos ocultos para el formulario -->
+                            <input type="hidden" id="frecuencia_respiratoria_dash" name="frecuencia_respiratoria" value="0" required>
+                            <input type="hidden" id="saturacion_oxigeno_dash" name="saturacion_oxigeno" value="0" required>
+                            <input type="hidden" id="tension_sistolica_dash" name="tension_sistolica" value="0" required>
+                            <input type="hidden" id="frecuencia_cardiaca_dash" name="frecuencia_cardiaca" value="0" required>
+                            <input type="hidden" id="nivel_conciencia_dash" name="nivel_conciencia" value="0" required>
+                            <input type="hidden" id="temperatura_dash" name="temperatura" value="0" required>
+
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted text-center">No hay pacientes recientes</p>
-                {% endif %}
+
+                    <!-- BOTÓN DE COMPLETAR -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success btn-lg" id="btnCompletarDash">
+                            <i class="bi bi-check-circle"></i> Completar Triage
+                        </button>
+                    </div>
+
+                </form>
             </div>
         </div>
     </div>
@@ -235,5 +468,254 @@
 setInterval(() => {
     window.location.reload();
 }, 120000);
+
+// 🧮 CALCULADORA NEWS INTEGRADA EN DASHBOARD
+console.log('🧮 Inicializando calculadora NEWS en Dashboard...');
+
+const calculadoraNEWSDashboard = {
+    puntajes: {
+        frecuencia_respiratoria: null,
+        saturacion_oxigeno: null,
+        tension_sistolica: null,
+        frecuencia_cardiaca: null,
+        nivel_conciencia: null,
+        temperatura: null
+    },
+    valores: {
+        frecuencia_respiratoria: null,
+        saturacion_oxigeno: null,
+        tension_sistolica: null,
+        frecuencia_cardiaca: null,
+        nivel_conciencia: null,
+        temperatura: null
+    },
+
+    init: function() {
+        const botones = document.querySelectorAll('.btn-valor');
+        console.log(`Encontrados ${botones.length} botones en dashboard`);
+        
+        botones.forEach(boton => {
+            boton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.seleccionarValor(e.target);
+            });
+        });
+    },
+
+    seleccionarValor: function(boton) {
+        const seccionSigno = boton.closest('[data-signo]');
+        if (!seccionSigno) {
+            console.error('No se encontró sección de signo');
+            return;
+        }
+        
+        const signo = seccionSigno.dataset.signo;
+        const valor = boton.dataset.valor;
+        const puntaje = parseInt(boton.dataset.puntaje);
+        
+        console.log(`Dashboard - Seleccionando: ${signo} = ${valor} (${puntaje} puntos)`);
+        
+        // Quitar selección previa
+        seccionSigno.querySelectorAll('.btn-valor').forEach(btn => {
+            btn.classList.remove('seleccionado');
+        });
+        
+        // Marcar como seleccionado
+        boton.classList.add('seleccionado');
+        
+        // Actualizar valores
+        this.puntajes[signo] = puntaje;
+        this.valores[signo] = valor;
+        
+        // Actualizar campo oculto con sufijo _dash
+        const hiddenField = document.getElementById(signo + '_dash');
+        if (hiddenField) {
+            hiddenField.value = valor;
+            console.log(`Campo oculto ${signo}_dash = ${valor}`);
+        }
+        
+        // Actualizar display individual
+        const displayElement = document.getElementById(`puntaje-${signo}-display-dash`);
+        if (displayElement) {
+            displayElement.textContent = puntaje;
+            displayElement.className = `badge ms-1 ${puntaje === 0 ? 'bg-success' : puntaje === 1 || puntaje === 2 ? 'bg-warning' : 'bg-danger'}`;
+        }
+        
+        // Recalcular total
+        this.actualizarResultado();
+    },
+    
+    actualizarResultado: function() {
+        const puntajesArray = Object.values(this.puntajes);
+        const totalSeleccionados = puntajesArray.filter(p => p !== null).length;
+        
+        console.log(`Dashboard - Puntajes seleccionados: ${totalSeleccionados}/6`);
+        
+        // Si no hay valores, mostrar estado inicial
+        if (totalSeleccionados === 0) {
+            this.mostrarEstadoInicial();
+            return;
+        }
+        
+        // Calcular puntaje total
+        const puntajeTotal = puntajesArray.reduce((sum, p) => sum + (p || 0), 0);
+        console.log(`Dashboard - Puntaje total: ${puntajeTotal}`);
+        
+        // Determinar clasificación
+        let clasificacion, colorClass, tiempoMax;
+        
+        if (puntajeTotal >= 7) {
+            clasificacion = 'ROJO';
+            colorClass = 'bg-danger';
+            tiempoMax = 'INMEDIATO';
+        } else if (puntajeTotal >= 5) {
+            clasificacion = 'AMARILLO';
+            colorClass = 'bg-warning text-dark';
+            tiempoMax = '30 minutos';
+        } else {
+            clasificacion = 'VERDE';
+            colorClass = 'bg-success';
+            tiempoMax = '60 minutos';
+        }
+        
+        console.log(`Dashboard - Clasificación: ${clasificacion} (${tiempoMax})`);
+        
+        // Actualizar UI
+        const colorDiv = document.getElementById('colorResultadoMiniDash');
+        const puntajeDiv = document.getElementById('puntajeTotalMiniDash');
+        const textoColor = document.getElementById('textoColorMiniDash');
+        const tiempoDiv = document.getElementById('tiempoAtencionMiniDash');
+        const textoTiempo = document.getElementById('textoTiempoMiniDash');
+        
+        if (colorDiv && puntajeDiv && textoColor) {
+            colorDiv.className = `color-resultado-mini text-white rounded p-2 small ${colorClass}`;
+            textoColor.textContent = clasificacion;
+            
+            puntajeDiv.textContent = puntajeTotal;
+            puntajeDiv.className = `h4 ${puntajeTotal >= 7 ? 'text-danger' : puntajeTotal >= 5 ? 'text-warning' : 'text-success'}`;
+            
+            if (tiempoDiv && textoTiempo) {
+                tiempoDiv.classList.remove('d-none');
+                textoTiempo.textContent = tiempoMax;
+                textoTiempo.className = `fw-bold small ${puntajeTotal >= 7 ? 'text-danger' : puntajeTotal >= 5 ? 'text-warning' : 'text-success'}`;
+            }
+        }
+        
+        // Mostrar resultado rápido
+        const resultadoRapido = document.getElementById('resultado-rapido');
+        const puntajeRapido = document.getElementById('puntaje-rapido');
+        const colorRapido = document.getElementById('color-rapido');
+        
+        if (resultadoRapido && puntajeRapido && colorRapido) {
+            resultadoRapido.classList.remove('d-none');
+            puntajeRapido.textContent = puntajeTotal;
+            puntajeRapido.className = `badge ${puntajeTotal >= 7 ? 'bg-danger' : puntajeTotal >= 5 ? 'bg-warning text-dark' : 'bg-success'}`;
+            colorRapido.textContent = clasificacion;
+            colorRapido.className = `badge ms-1 ${puntajeTotal >= 7 ? 'bg-danger' : puntajeTotal >= 5 ? 'bg-warning text-dark' : 'bg-success'}`;
+        }
+    },
+    
+    mostrarEstadoInicial: function() {
+        const colorDiv = document.getElementById('colorResultadoMiniDash');
+        const puntajeDiv = document.getElementById('puntajeTotalMiniDash');
+        const textoColor = document.getElementById('textoColorMiniDash');
+        const tiempoDiv = document.getElementById('tiempoAtencionMiniDash');
+        const resultadoRapido = document.getElementById('resultado-rapido');
+        
+        if (colorDiv && puntajeDiv && textoColor) {
+            colorDiv.className = 'color-resultado-mini bg-secondary text-white rounded p-2 small';
+            textoColor.textContent = 'Selecciona valores';
+            puntajeDiv.textContent = '--';
+            puntajeDiv.className = 'h4 text-muted';
+        }
+        
+        if (tiempoDiv) {
+            tiempoDiv.classList.add('d-none');
+        }
+        
+        if (resultadoRapido) {
+            resultadoRapido.classList.add('d-none');
+        }
+        
+        // Limpiar puntajes individuales
+        Object.keys(this.puntajes).forEach(signo => {
+            const displayElement = document.getElementById(`puntaje-${signo}-display-dash`);
+            if (displayElement) {
+                displayElement.textContent = '-';
+                displayElement.className = 'badge bg-secondary ms-1';
+            }
+        });
+    }
+};
+
+// 🛡️ VALIDACIÓN DEL FORMULARIO DASHBOARD
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Sistema Triage Dashboard iniciando...');
+    
+    // Inicializar calculadora
+    calculadoraNEWSDashboard.init();
+    
+    // Validación del formulario
+    const form = document.getElementById('triageCompletoFormDashboard');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('🔍 Validando formulario dashboard antes del envío...');
+            
+            // Verificar valores de NEWS
+            const newsFields = ['frecuencia_respiratoria', 'saturacion_oxigeno', 'tension_sistolica', 
+                              'frecuencia_cardiaca', 'nivel_conciencia', 'temperatura'];
+            
+            let allNewsComplete = true;
+            let incompleteFields = [];
+            
+            newsFields.forEach(field => {
+                const hiddenField = document.getElementById(field + '_dash');
+                if (!hiddenField || !hiddenField.value || hiddenField.value === '0') {
+                    allNewsComplete = false;
+                    incompleteFields.push(field);
+                }
+                console.log(`📊 ${field}: ${hiddenField ? hiddenField.value : 'NO ENCONTRADO'}`);
+            });
+            
+            if (!allNewsComplete) {
+                e.preventDefault();
+                alert(`⚠️ Por favor complete todos los signos vitales de NEWS:\n\n${incompleteFields.map(f => f.replace('_', ' ')).join('\n')}\n\nSeleccione los botones correspondientes en la calculadora.`);
+                console.warn('❌ Formulario dashboard bloqueado: Faltan valores NEWS', incompleteFields);
+                return false;
+            }
+            
+            console.log('✅ Validación dashboard completa - enviando formulario');
+            return true;
+        });
+    }
+});
+
+// CSS para selección de botones
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+    .btn-valor.seleccionado {
+        background-color: var(--bs-primary) !important;
+        color: white !important;
+        border-color: var(--bs-primary) !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        transform: scale(1.05);
+        transition: all 0.2s ease;
+    }
+    
+    .btn-valor:hover {
+        transform: scale(1.02);
+        transition: all 0.2s ease;
+    }
+    
+    .color-resultado-mini {
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+`;
+document.head.appendChild(styleSheet);
+
 </script>
 {% endblock %}

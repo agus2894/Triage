@@ -10,6 +10,38 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 
 
+class PacienteManager(models.Manager):
+    """Manager optimizado para consultas frecuentes de pacientes."""
+    
+    def activos_en_espera(self):
+        """Pacientes activos en espera con datos pre-cargados."""
+        return self.filter(
+            activo=True,
+            estado_atencion='ESPERANDO'
+        ).prefetch_related('signos_vitales').order_by('-fecha_ingreso')
+    
+    def criticos_sin_atender(self):
+        """Pacientes críticos que necesitan atención inmediata."""
+        return self.filter(
+            activo=True,
+            estado_atencion__in=['ESPERANDO', 'EN_ATENCION'],
+            signos_vitales__nivel_urgencia__in=['ROJO', 'AMARILLO']
+        ).select_related().prefetch_related('signos_vitales').distinct()
+    
+    def estadisticas_diarias(self, fecha=None):
+        """Estadísticas optimizadas para un día específico."""
+        if fecha is None:
+            fecha = timezone.now().date()
+        
+        return self.filter(
+            fecha_ingreso__date=fecha
+        ).aggregate(
+            total=models.Count('id'),
+            atendidos=models.Count('id', filter=models.Q(estado_atencion='ATENDIDO')),
+            en_espera=models.Count('id', filter=models.Q(estado_atencion='ESPERANDO')),
+        )
+
+
 class Paciente(models.Model):
     """
     Modelo para almacenar información básica del paciente.
@@ -102,6 +134,9 @@ class Paciente(models.Model):
         help_text="Indica si el paciente está actualmente en el sistema"
     )
     
+    # Manager optimizado
+    objects = PacienteManager()
+
     class Meta:
         verbose_name = "Paciente"
         verbose_name_plural = "Pacientes"
@@ -113,6 +148,10 @@ class Paciente(models.Model):
             models.Index(fields=['dni'], name='idx_pacientes_dni'),
             # Índice para estadísticas por fecha
             models.Index(fields=['fecha_ingreso'], name='idx_pacientes_fecha'),
+            # NUEVO: Índice compuesto optimizado para dashboard
+            models.Index(fields=['activo', 'estado_atencion'], name='idx_estado_activo'),
+            # NUEVO: Índice para búsquedas por edad en emergencias
+            models.Index(fields=['edad'], name='idx_pacientes_edad'),
         ]
         
     def __str__(self):
@@ -139,13 +178,17 @@ class Paciente(models.Model):
     
     @property
     def tiempo_espera(self):
-        """Tiempo de espera formateado."""
+        """Tiempo de espera formateado - OPTIMIZADO."""
         if self.estado_atencion == 'ATENDIDO':
             return "✅ Atendido"
         if self.estado_atencion == 'EN_ATENCION':
             return "👩‍⚕️ En atención"
             
-        delta = timezone.now() - self.fecha_ingreso
+        # Cálculo optimizado usando cache interno
+        if not hasattr(self, '_tiempo_delta_cache'):
+            self._tiempo_delta_cache = timezone.now() - self.fecha_ingreso
+        
+        delta = self._tiempo_delta_cache
         horas = delta.seconds // 3600
         minutos = (delta.seconds % 3600) // 60
         
@@ -158,22 +201,36 @@ class Paciente(models.Model):
 
     @property
     def tiempo_espera_minutos(self):
-        """Tiempo de espera en minutos para cálculos."""
+        """Tiempo de espera en minutos para cálculos - OPTIMIZADO."""
         if self.estado_atencion in ['ATENDIDO', 'EN_ATENCION']:
             return 0
+        
+        # Usar cache si existe
+        if not hasattr(self, '_tiempo_delta_cache'):
+            self._tiempo_delta_cache = timezone.now() - self.fecha_ingreso
             
-        delta = timezone.now() - self.fecha_ingreso
-        return int(delta.total_seconds() / 60)
-    
-    def marcar_atendido(self):
-        """Marca el paciente como atendido y actualiza fecha."""
-        self.estado_atencion = 'ATENDIDO'
-        self.fecha_atencion = timezone.now()
-        self.save()
+        return int(self._tiempo_delta_cache.total_seconds() / 60)
     
     def es_critico(self):
-        """Verifica si tiene triage crítico (ROJO/AMARILLO)."""
-        ultimo_triage = self.signos_vitales.first()
+        """Verifica si tiene triage crítico (ROJO/AMARILLO) - OPTIMIZADO."""
+        # Usar select_related para evitar consulta adicional
+        if hasattr(self, '_ultimo_triage_cache'):
+            ultimo_triage = self._ultimo_triage_cache
+        else:
+            ultimo_triage = self.signos_vitales.select_related().first()
+            self._ultimo_triage_cache = ultimo_triage
+            
         if ultimo_triage and ultimo_triage.nivel_urgencia:
             return ultimo_triage.nivel_urgencia in ['ROJO', 'AMARILLO']
         return False
+    
+    def marcar_atendido(self):
+        """Marca el paciente como atendido y actualiza fecha - OPTIMIZADO."""
+        # Usar update() para ser más eficiente que save()
+        Paciente.objects.filter(id=self.id).update(
+            estado_atencion='ATENDIDO',
+            fecha_atencion=timezone.now()
+        )
+        # Actualizar instancia actual
+        self.estado_atencion = 'ATENDIDO'
+        self.fecha_atencion = timezone.now()

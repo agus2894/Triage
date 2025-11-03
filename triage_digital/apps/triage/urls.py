@@ -9,11 +9,8 @@ from . import views
 app_name = 'triage'
 
 urlpatterns = [
-    # Dashboard principal
+    # Dashboard principal - TODO INTEGRADO
     path('', views.dashboard_principal, name='dashboard'),
-    
-    # Vista única inteligente para triage completo
-    path('triage-completo/', views.triage_completo, name='triage_completo'),
     
     # 📊 Reporte PDF ultra-simple
     path('reporte-diario/', views.reporte_diario_pdf, name='reporte_diario'),
@@ -23,6 +20,7 @@ urlpatterns = [
     
     # API simple
     path('api/lista-pacientes/', views.api_lista_pacientes, name='api_lista_pacientes'),
+    path('api/estadisticas-dashboard/', views.api_estadisticas_dashboard, name='api_estadisticas_dashboard'),
     
     # 📱 PWA - Progressive Web App
     path('manifest.json', views.manifest, name='manifest'),

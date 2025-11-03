@@ -1,12 +1,10 @@
-altgraph==0.17.4
-asgiref==3.10.0
-chardet==5.2.0
-Django==5.2.5
-packaging==25.0
-pillow==12.0.0
-pyinstaller==6.16.0
-pyinstaller-hooks-contrib==2025.9
-python-decouple==3.8
-reportlab==4.2.5
-setuptools==80.9.0
-sqlparse==0.5.3
+# 🏥 TRIAGE DIGITAL - DEPENDENCIAS ESENCIALES
+# Solo lo mínimo necesario para funcionar en hospital
+
+Django==5.2.5          # Framework web principal
+reportlab==4.2.5       # Generación de PDFs para reportes médicos
+
+# Dependencias automáticas de Django (se instalan solas)
+# - asgiref
+# - sqlparse
+# - pillow (para campos ImageField si se usan en futuro)

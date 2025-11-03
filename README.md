@@ -1,54 +1,51 @@
-# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO
+# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO INTEGRADO
 
-> **Sistema de clasificación médica optimizado para producción**  
-> *Listo para usar en hospital - Configuración mínima requerida*
+> **Sistema de clasificación médica de emergencia - TODO INTEGRADO EN UNA PANTALLA**  
+> *Dashboard unificado - Sin páginas separadas - Optimizado para velocidad crítica*
 
 ---
 
-## 🚀 **INSTALACIÓN EN MÁQUINA DE COLEGA**
-
-### **📋 Requisitos Previos**
-- Python 3.8+ instalado
-- Git instalado
-- Acceso a terminal/command prompt
 
 ### **⚡ Instalación Súper Rápida**
 
 ```bash
 # 1. Clonar proyecto
 git clone [URL_DEL_REPOSITORIO]
-cd Triage/Triage
+cd Triage
 
 # 2. Crear entorno virtual
-python3 -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# O en Windows: .venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# O en Windows: venv\Scripts\activate
 
-# 3. Instalar dependencias (solo 3!)
+# 3. Instalar dependencias (solo 2 esenciales!)
 cd triage_digital
 pip install -r requirements.txt
 
 # 4. Configurar sistema automáticamente
-./start.sh
+python manage.py migrate
 
-# ¡LISTO! Sistema funcionando en http://127.0.0.1:8000
-```
-
----
+# 5. Iniciar servidor
+python manage.py runserver
 
 ## 🔑 **CREDENCIALES DE ACCESO**
 
-### **👨‍⚕️ Para Personal Médico:**
-- **URL**: http://127.0.0.1:8000
-- **DNI**: `00000000`
+### **�‍⚕️ ENFERMERO TRIAJERO** (Solo triage)
+- **URL**: http://127.0.0.1:8000/triage/
+- **DNI**: `38046539`
 - **Contraseña**: `123456`
+- **Permisos**: Realizar triage, ver pacientes en espera
 
-### **🔧 Para Administradores:**
+### **🔧 ADMINISTRADOR** (Todos los permisos + Reportes PDF)
+- **URL**: http://127.0.0.1:8000/triage/
+- **DNI**: `00000000` (8 ceros)
+- **Contraseña**: `123456`
+- **Permisos**: Triage + Descargar reportes PDF + Gestión
+
+### **🔧 Panel Admin Django:**
 - **URL**: http://127.0.0.1:8000/admin/
 - **Usuario**: `admin`
 - **Contraseña**: `123456`
-
-> ⚠️ **IMPORTANTE**: Cambiar contraseñas en producción real
 
 ---
 
@@ -71,111 +68,31 @@ pip install -r requirements.txt
 - **PDF automático** con estadísticas del día
 - **Descarga inmediata** desde el dashboard
 
----
 
-## 📱 **CARACTERÍSTICAS DESTACADAS**
 
-### **⚡ Ultra-Optimizado**
-- **Solo 3 dependencias** (Django, decouple, reportlab)
-- **Formulario único** - Todo en una pantalla
-- **Cálculo automático** NEWS Score internacional
-- **Sin configuración** - Funciona out-of-the-box
+### **🔒 SISTEMA DE ROLES Y PERMISOS**
 
-### **🏥 Diseño Hospitalario**
-- **Interfaz médica** intuitiva
-- **Colores estándar** (Rojo/Amarillo/Verde)
-- **Tiempo real** para emergencias
-- **Mobile-first** para tablets/celulares
+#### **👩‍⚕️ ENFERMERO TRIAJERO**
+- ✅ Realizar triage de pacientes
+- ✅ Ver pacientes en espera con priorización automática
+- ✅ Marcar pacientes como atendidos
+- ❌ **NO puede descargar reportes PDF**
+- 🎯 **Interfaz limpia** sin opciones administrativas
 
-### **🔒 Seguridad Médica**
-- **Autenticación por DNI** profesional
-- **Datos en SQLite** local (privacidad)
-- **Sin conexión externa** requerida
+#### **🔧 ADMINISTRADOR**
+- ✅ Todos los permisos del enfermero +
+- ✅ **Descargar reportes PDF diarios**
+- ✅ Gestión de usuarios y sistema
+- 📊 **Botón "Reporte PDF"** visible en dashboard
 
----
+### **📋 REPORTE PDF PARA ADMINISTRADORES**
+El reporte incluye información detallada para supervisión:
+- 👩‍⚕️ **Qué enfermero atendió** cada paciente
+- 📊 **NEWS Score obtenido** por cada caso
+- ⏰ **Horarios exactos** de atención
+- 📈 **Estadísticas por profesional** (rendimiento diario)
+- 🏥 **Resumen general** del turno
 
-## 🎯 **CLASIFICACIÓN MÉDICA**
 
-### **🔴 ROJO (NEWS ≥7)**
-- **Emergencia crítica**
-- **Atención inmediata**
-- **Riesgo vital**
-
-### **🟡 AMARILLO (NEWS 5-6)**
-- **Urgencia moderada** 
-- **Atención en 30 minutos**
-- **Monitoreo frecuente**
-
-### **🟢 VERDE (NEWS 0-4)**
-- **Sin riesgo inmediato**
-- **Atención en 60 minutos**
-- **Rutinario**
-
----
-
-## 🛠️ **COMANDOS ÚTILES**
-
-### **Iniciar Sistema**
-```bash
-./start.sh              # Modo desarrollo
-./start.sh demo         # Con datos de ejemplo
-./start.sh red          # Para red hospitalaria
-```
-
-### **Crear Usuario Médico**
-```bash
-python3 manage.py setup_admin
-```
-
-### **Resetear Datos**
-```bash
-python3 manage.py flush
-python3 manage.py setup_admin
-```
-
----
-
-## 🏥 **DESPLIEGUE EN HOSPITAL**
-
-### **Para PC Local (Demo/Testing)**
-- Usar `./start.sh demo`
-- Acceso: http://127.0.0.1:8000
-
-### **Para Red Hospitalaria**
-- Usar `./start.sh red` 
-- Acceso: http://[IP-DEL-SERVIDOR]:8000
-- Configurar IP fija en router
-
-### **Para Producción**
-- Cambiar contraseñas por defecto
-- Configurar backup de base de datos
-- Documentar procedimientos médicos
-
----
-
-## 📞 **SOPORTE TÉCNICO**
-
-### **Problemas Comunes**
-- **Puerto ocupado**: Cambiar puerto en `start.sh`
-- **Sin Python**: Instalar Python 3.8+
-- **Permisos**: Ejecutar como administrador
-
-### **Logs del Sistema**
-- Ver terminal donde se ejecuta `./start.sh`
-- Errores aparecen automáticamente
-
----
-
-## 📈 **ESTADO DEL PROYECTO**
-
-✅ **Sistema 100% Funcional**  
-✅ **Optimizado para Hospitales**  
-✅ **Sin Bugs Conocidos**  
-✅ **Listo para Producción**  
-✅ **Documentación Completa**
-
----
-
-**💙 Desarrollado para salvar vidas - Cada segundo cuenta en emergencias**
 
 *Sistema hospitalario profesional - Octubre 2025*
