@@ -1,19 +1,15 @@
-"""
-Comando para crear/resetear el admin único del sistema.
-Ejecutar: python manage.py setup_admin
-"""
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from apps.triage.models import Profesional
 
+
 class Command(BaseCommand):
-    help = 'Crea o resetea el admin único del sistema (admin/123456) - CAMBIAR EN PRODUCCIÓN'
+    help = 'Crea admin del sistema'
 
     def handle(self, *args, **options):
         self.stdout.write('🏥 CONFIGURANDO ADMIN ÚNICO')
         self.stdout.write('=' * 30)
         
-        # Verificar si ya existe el admin
         try:
             admin = User.objects.get(username='admin')
             self.stdout.write('⚠️  Admin existente - Actualizando credenciales')
@@ -25,7 +21,6 @@ class Command(BaseCommand):
             admin.is_staff = True
             admin.save()
         except User.DoesNotExist:
-            # Crear el admin único
             admin = User.objects.create_superuser(
                 username='admin',
                 email='admin@hospital.com',

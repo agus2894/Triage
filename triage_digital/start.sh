@@ -1,9 +1,9 @@
 #!/bin/bash
 # TRIAGE DIGITAL - EL SCRIPT DEFINITIVO
-# Un solo comando para regirlos a todos 🎯
+# Un solo comando para regirlos a todos
 
 clear
-echo "🏥 SISTEMA TRIAGE DIGITAL"
+echo " SISTEMA TRIAGE DIGITAL"
 echo "========================="
 echo "⚡ Iniciando automáticamente..."
 echo ""

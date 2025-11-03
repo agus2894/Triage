@@ -1,9 +1,3 @@
-"""
-Vistas principales del sistema de triage médico.
-Filosofía: "Menos es mejor" - Funciones simples que salvan vidas.
-OPTIMIZADO: Imports lazy y consultas eficientes para máximo rendimiento.
-"""
-
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
@@ -20,20 +14,12 @@ from .models import SignosVitales, Profesional
 
 
 def _lazy_import_pdf():
-    """Import lazy de reportlab para ahorrar memoria."""
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import letter
     return canvas, letter
 
 
 def _crear_signos_vitales(request, paciente, profesional):
-    """
-    Helper function para crear signos vitales y calcular triage.
-    Aplicando DRY principle - "Menos es más".
-    VALIDACIÓN ROBUSTA para evitar errores 'undefined'.
-    """
-    
-    # Función helper para validar y convertir valores
     def safe_int(value, default=0):
         if value in [None, '', 'undefined', 'null']:
             return default
@@ -78,24 +64,15 @@ def _crear_signos_vitales(request, paciente, profesional):
 
 
 def _obtener_profesional(request):
-    """Helper para obtener profesional del usuario actual."""
     try:
         return request.user.profesional
     except Profesional.DoesNotExist:
         return None
 
 
-
 @login_required
 @require_http_methods(["GET", "POST"])
 def dashboard_principal(request):
-    """
-    Dashboard médico optimizado - Vista general del triage.
-    🚨 AUTO-OPTIMIZADO con cache inteligente que se actualiza automáticamente.
-    NUEVA FUNCIONALIDAD: Maneja también el envío de triage desde formulario integrado.
-    """
-    
-    # 🚀 MANEJAR ENVÍO DE TRIAGE DESDE FORMULARIO INTEGRADO
     if request.method == 'POST':
         try:
             # Obtener profesional

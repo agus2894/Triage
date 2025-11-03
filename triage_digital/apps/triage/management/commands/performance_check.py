@@ -1,53 +1,97 @@
-"""
-Comando para análisis de rendimiento y memoria del sistema de triage.
-Ejecutar: python manage.py performance_check
-"""
-import os
-import sys
-import gc
+import osimport osimport os
+
 from django.core.management.base import BaseCommand
-from django.db import connection
-from django.core.cache import cache
+
+from django.db import connectionfrom django.core.management.base import BaseCommandfrom django.core.management.base import BaseCommand
+
 from django.conf import settings
-from apps.patients.models import Paciente
-from apps.triage.models import SignosVitales, Profesional
+
+from apps.patients.models import Pacientefrom django.db import connectionfrom django.db import connection
+
+from apps.triage.models import SignosVitales
+
+from django.conf import settingsfrom django.conf import settings
 
 
-class Command(BaseCommand):
-    help = 'Analiza el rendimiento y uso de memoria del sistema'
 
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--detailed',
-            action='store_true',
-            help='Análisis detallado con información adicional',
-        )
+class Command(BaseCommand):from apps.patients.models import Pacientefrom apps.patients.models import Paciente
+
+    help = 'Análisis básico del sistema'
+
+from apps.triage.models import SignosVitalesfrom apps.triage.models import SignosVitales
 
     def handle(self, *args, **options):
-        self.stdout.write('🔍 Analizando rendimiento del sistema de triage...\n')
-        
-        # 1. Análisis de base de datos
-        self._analizar_base_datos()
-        
-        # 2. Análisis de memoria
-        self._analizar_memoria()
-        
-        # 3. Análisis de cache
-        self._analizar_cache()
-        
-        # 4. Análisis de consultas
-        if options['detailed']:
-            self._analizar_consultas_detalladas()
-        
-        # 5. Recomendaciones
-        self._mostrar_recomendaciones()
-        
-        self.stdout.write(self.style.SUCCESS('\n✅ Análisis de rendimiento completado'))
 
-    def _analizar_base_datos(self):
-        """Analiza el estado y rendimiento de la base de datos."""
-        self.stdout.write('📊 ANÁLISIS DE BASE DE DATOS')
-        self.stdout.write('=' * 40)
+        self.stdout.write('🔍 Análisis del sistema...\n')
+
+        
+
+        # Base de datos
+
+        with connection.cursor() as cursor:
+
+            cursor.execute("SELECT sqlite_version();")class Command(BaseCommand):class Command(BaseCommand):
+
+            version = cursor.fetchone()[0]
+
+            self.stdout.write(f'SQLite: {version}')    help = 'Análisis básico del sistema'    help = 'Análisis básico del sistema'
+
+            
+
+            db_path = settings.DATABASES['default']['NAME']
+
+            if os.path.exists(db_path):
+
+                size_mb = os.path.getsize(db_path) / (1024 * 1024)    def handle(self, *args, **options):    def handle(self, *args, **options):
+
+                self.stdout.write(f'BD: {size_mb:.1f} MB')
+
+                self.stdout.write('🔍 Análisis del sistema...\n')        self.stdout.write('🔍 Análisis del sistema...\n')
+
+        # Datos
+
+        pacientes = Paciente.objects.count()                
+
+        signos = SignosVitales.objects.count()
+
+        self.stdout.write(f'Pacientes: {pacientes}')        # Base de datos        # Base de datos
+
+        self.stdout.write(f'Signos vitales: {signos}')
+
+                with connection.cursor() as cursor:        with connection.cursor() as cursor:
+
+        self.stdout.write('\n✅ Análisis completado')
+            cursor.execute("SELECT sqlite_version();")            cursor.execute("SELECT sqlite_version();")
+
+            version = cursor.fetchone()[0]            version = cursor.fetchone()[0]
+
+            self.stdout.write(f'SQLite: {version}')            self.stdout.write(f'SQLite: {version}')
+
+                        
+
+            db_path = settings.DATABASES['default']['NAME']            db_path = settings.DATABASES['default']['NAME']
+
+            if os.path.exists(db_path):            if os.path.exists(db_path):
+
+                size_mb = os.path.getsize(db_path) / (1024 * 1024)                size_mb = os.path.getsize(db_path) / (1024 * 1024)
+
+                self.stdout.write(f'BD: {size_mb:.1f} MB')                self.stdout.write(f'BD: {size_mb:.1f} MB')
+
+                
+
+        # Datos        # Datos
+
+        pacientes = Paciente.objects.count()        pacientes = Paciente.objects.count()
+
+        signos = SignosVitales.objects.count()        signos = SignosVitales.objects.count()
+
+        self.stdout.write(f'Pacientes: {pacientes}')        self.stdout.write(f'Pacientes: {pacientes}')
+
+        self.stdout.write(f'Signos vitales: {signos}')        self.stdout.write(f'Signos vitales: {signos}')
+
+                
+
+        self.stdout.write('\n✅ Análisis completado')        self.stdout.write('\n✅ Análisis completado')
         
         with connection.cursor() as cursor:
             # Información de SQLite
