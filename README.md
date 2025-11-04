@@ -13,11 +13,43 @@ Triage Digital es un sistema hospitalario completo que permite:
 - **📊 Reportes**: Generación de informes en PDF con estadísticas médicas
 - **🔒 Seguridad**: Sistema de autenticación y control de acceso por roles
 
-## ⚡ INSTALACIÓN RÁPIDA
+## 🚀 OPCIONES DE INSTALACIÓN
+
+### 💻 **OPCIÓN 1: EJECUTABLE (Recomendado para usuarios finales)**
+
+**📥 Descarga directa - Sin instalación**
+
+1. **Descargar el ejecutable:**
+   - Solicita el archivo `TriageDigital` al desarrollador
+   - O compílalo siguiendo las instrucciones de desarrollo
+
+2. **Ejecutar:**
+   ```bash
+   ./TriageDigital  # Linux/Mac
+   # TriageDigital.exe  # Windows
+   ```
+
+3. **Acceder al sistema:**
+   - El navegador se abrirá automáticamente en: `http://127.0.0.1:8001`
+   - **Usuario:** `admin`
+   - **Contraseña:** `123456`
+
+**✅ Ventajas:** Sin dependencias, funciona inmediatamente, incluye todo lo necesario
+
+---
+
+### 🛠️ **OPCIÓN 2: INSTALACIÓN DESDE CÓDIGO FUENTE**
+
+**📋 Requisitos previos:**
+- Python 3.8 o superior
+- Git
+- 50MB de espacio libre
+
+**⚡ Instalación paso a paso:**
 
 ```bash
 # 1. Clonar el repositorio
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/agus2894/Triage.git
 cd Triage
 
 # 2. Crear y activar entorno virtual
@@ -26,62 +58,132 @@ source venv/bin/activate  # Linux/Mac
 # En Windows: venv\Scripts\activate
 
 # 3. Instalar dependencias
-cd triage_digital
-pip install -r ../requirements.txt
+pip install -r requirements.txt
 
 # 4. Configurar la base de datos
+cd triage_digital
 python manage.py migrate
-
-# 5. Crear usuario administrador
 python manage.py setup_admin
 
-# 6. Iniciar servidor
-python manage.py runserver
+# 5. Iniciar servidor
+python manage.py runserver 127.0.0.1:8001
+```
+
+**🌐 Acceder al sistema:**
+- URL: `http://127.0.0.1:8001`
+- **Usuario:** `admin`
+- **Contraseña:** `123456`
+
+---
+
+### 🔨 **OPCIÓN 3: COMPILAR TU PROPIO EJECUTABLE**
+
+**Para desarrolladores que quieren crear el ejecutable:**
+
+```bash
+# 1. Seguir pasos de la Opción 2 hasta el paso 4
+
+# 2. Instalar PyInstaller
+pip install pyinstaller
+
+# 3. Compilar ejecutable
+pyinstaller app_launcher.py --onefile --name TriageDigital
+
+# 4. El ejecutable estará en: dist/TriageDigital
+```
 
 ## 🔑 **CREDENCIALES DE ACCESO**
 
-> **⚠️ IMPORTANTE**: Después de clonar el proyecto, **SIEMPRE** ejecutar `python manage.py setup_admin` para crear los usuarios del sistema.
+### **👤 Usuario Administrador:**
+- **Usuario:** `admin`
+- **Contraseña:** `123456`
+- **Permisos:** Acceso completo al sistema
 
-### **📋 SETUP PARA NUEVOS DESARROLLADORES**
+### **🏥 Usuario Triage:**
+- **DNI:** `00000000`
+- **Contraseña:** `123456`  
+- **Permisos:** Registro y clasificación de pacientes
 
+> **⚠️ IMPORTANTE:** Cambiar las contraseñas por defecto en entorno de producción
+
+## ❓ **SOLUCIÓN DE PROBLEMAS**
+
+### **🐛 Problemas comunes:**
+
+**Error: "No module named 'django'"**
 ```bash
-# Después de instalar dependencias y migrar:
-python manage.py setup_admin
-
-# ✅ Este comando crea automáticamente:
-# - Usuario admin para Django Admin
-# - Usuario administrador del sistema hospitalario  
-# - Perfil profesional asociado
+# Asegúrate de activar el entorno virtual
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### **👨‍⚕️ ENFERMERO TRIAJERO** (Solo triage)
-- **URL**: http://127.0.0.1:8000/triage/
-- **DNI**: `38046539`
-- **Contraseña**: `123456`
-- **Permisos**: Realizar triage, ver pacientes en espera
+**Error: "Port is already in use"**
+```bash
+# Usar otro puerto
+python manage.py runserver 127.0.0.1:8002
+```
 
-### **🔧 ADMINISTRADOR** (Todos los permisos + Reportes PDF)
-- **URL**: http://127.0.0.1:8000/triage/
-- **DNI**: `00000000` (8 ceros)
-- **Contraseña**: `123456`
-- **Permisos**: Triage + Descargar reportes PDF + Gestión
+**Error de base de datos**
+```bash
+# Recrear la base de datos
+rm db/triage_digital.sqlite3
+python manage.py migrate
+python manage.py setup_admin
+```
 
-### **🔧 Panel Admin Django:**
-- **URL**: http://127.0.0.1:8000/admin/
-- **Usuario**: `admin`
-- **Contraseña**: `123456`
+**El ejecutable no inicia**
+```bash
+# Verificar permisos (Linux/Mac)
+chmod +x TriageDigital
+./TriageDigital
+```
+
+### **� Soporte:**
+- Reportar problemas en: [GitHub Issues](https://github.com/agus2894/Triage/issues)
+- Desarrollador: agus2894
+
+## 🏗️ **TECNOLOGÍAS UTILIZADAS**
+
+- **Backend:** Django 5.2.5
+- **Base de datos:** SQLite
+- **Frontend:** HTML5, CSS3, Bootstrap
+- **PDF:** ReportLab
+- **Autenticación:** Django Auth System
+- **Empaquetado:** PyInstaller
+
+## 📁 **ESTRUCTURA DEL PROYECTO**
+
+```
+Triage/
+├── README.md                 # Este archivo
+├── requirements.txt          # Dependencias Python
+├── .gitignore               # Archivos ignorados por Git
+└── triage_digital/          # Aplicación principal
+    ├── manage.py            # Gestor de Django
+    ├── app_launcher.py      # Launcher para ejecutable
+    ├── db/                  # Base de datos SQLite
+    ├── config/              # Configuración Django
+    ├── apps/                # Aplicaciones del proyecto
+    │   ├── triage/          # App principal de triage
+    │   └── patients/        # App de gestión de pacientes
+    └── logs/                # Archivos de log
+```
+
+## � **ESTADÍSTICAS DEL PROYECTO**
+
+- **Líneas de código:** ~3,000
+- **Archivos Python:** 25+
+- **Modelos de BD:** 5 principales
+- **Templates HTML:** 10+
+- **Funcionalidades:** 15+ características médicas
 
 ---
 
----
+## 📄 **LICENCIA**
 
-## 🗄️ **CONFIGURACIÓN DE BASE DE DATOS**
+Este proyecto es de código abierto y está disponible para uso educativo y profesional.
 
-### **📂 Base de Datos Local**
-- **Archivo**: `triage_digital/db/triage_digital.sqlite3`
-- **Estado**: ❌ **NO está en Git** (buena práctica)
-- **Cada desarrollador**: Tiene su propia BD local
-- **Datos**: Se crean con `migrate` y `setup_admin`
+**Desarrollado con ❤️ para mejorar la atención hospitalaria** 🏥
 
 ### **🔄 Flujo para Nuevos Colegas**
 ```bash
