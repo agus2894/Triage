@@ -99,6 +99,35 @@ reportes_generados/
 reporte_*.pdf
 triage_*.pdf
 
+# ============================================
+# 📁 ARCHIVOS DE DESARROLLO Y TEMPORALES
+# ============================================
+
+# Archivos de Microsoft Office
+*.docx
+*.xlsx
+*.pptx
+~$*
+
+# Archivos de configuración de PyInstaller
+*.spec
+
+# Archivos de instrucciones de desarrollo
+COMPILAR_APP.md
+PENDRIVE_INSTRUCTIONS.md
+APLICACION_LISTA.md
+
+# Carpetas de build y dist (PyInstaller)
+build/
+dist/
+*.egg-info/
+
+# Archivos temporales adicionales
+*.tmp
+*.bak
+*.swp
+*.swo
+
 # Backups de base de datos
 backup_*.sqlite3
 backup_*.sql
