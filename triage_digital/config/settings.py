@@ -29,13 +29,11 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'apps.triage.middleware.SmartCacheMiddleware',  # Cache inteligente automático
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.triage.middleware.AutoOptimizationMiddleware',  # Optimización automática
 ]
 
 # Configuraciones de seguridad para producción
