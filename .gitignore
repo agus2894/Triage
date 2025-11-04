@@ -77,6 +77,7 @@ Desktop.ini
 build/
 dist/
 *.spec
+!TriageDigital.spec
 
 # Archivos temporales
 *.tmp

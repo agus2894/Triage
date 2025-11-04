@@ -66,30 +66,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Base de datos AUTO-OPTIMIZADA para triage médico crítico
+# Base de datos PostgreSQL en Render (PRODUCCIÓN)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db' / 'triage_digital.sqlite3',
-        # AUTO-OPTIMIZACIÓN: Configuraciones aplicadas automáticamente al conectar
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'triage_db',
+        'USER': 'triage_user',
+        'PASSWORD': '3cntLJMgwEOKtlTEunIvBuzV6Fw7DY2r',
+        'HOST': 'dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com',
+        'PORT': '5432',
         'OPTIONS': {
-            'init_command': """
-                PRAGMA journal_mode=WAL;
-                PRAGMA synchronous=NORMAL;
-                PRAGMA cache_size=20000;
-                PRAGMA temp_store=MEMORY;
-                PRAGMA mmap_size=268435456;
-                PRAGMA foreign_keys=ON;
-                PRAGMA auto_vacuum=INCREMENTAL;
-                PRAGMA wal_autocheckpoint=1000;
-                PRAGMA optimize;
-            """,
-            # Timeout más largo para operaciones intensivas
-            'timeout': 30,
+            'sslmode': 'require',
         },
-        'TEST': {
-            'NAME': ':memory:',  # Tests en memoria para velocidad máxima
-        }
     }
 }
 

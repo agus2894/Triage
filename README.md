@@ -29,6 +29,12 @@ Triage Digital es un sistema hospitalario completo que permite:
    # TriageDigital.exe  # Windows
    ```
 
+3. **Acceder:**
+   - Se abrirá automáticamente en tu navegador
+   - URL: `http://127.0.0.1:8000`
+   - **Admin:** `admin` / `123456`
+   - **Triage:** DNI `00000000` / `123456`
+
 3. **Acceder al sistema:**
    - El navegador se abrirá automáticamente en: `http://127.0.0.1:8001`
    - **Usuario:** `admin`
