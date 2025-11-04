@@ -14,10 +14,11 @@ from pathlib import Path
 def main():
     """Función principal que inicia el servidor Django y abre el navegador"""
     try:
-        # Configurar el directorio de trabajo
+        # Configurar el directorio de trabajo para PyInstaller
         if getattr(sys, 'frozen', False):
-            # Si estamos en una app compilada
-            base_dir = Path(sys.executable).parent
+            # Si estamos en una app compilada con PyInstaller
+            # sys._MEIPASS contiene el directorio temporal donde PyInstaller extrae los archivos
+            base_dir = Path(sys._MEIPASS)
         else:
             # Si estamos en desarrollo
             base_dir = Path(__file__).parent
@@ -27,6 +28,8 @@ def main():
         # Verificar que existe manage.py
         if not Path('manage.py').exists():
             print("❌ Error: No se encontró manage.py")
+            print(f"Directorio actual: {os.getcwd()}")
+            print(f"Archivos disponibles: {list(Path('.').glob('*'))}")
             input("Presiona Enter para salir...")
             return
             
