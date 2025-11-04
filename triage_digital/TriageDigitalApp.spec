@@ -8,7 +8,7 @@ a = Analysis(
         ('apps', 'apps'),
         ('config', 'config'),
         ('manage.py', '.'),
-        ('requirements.txt', '.'),
+        ('../requirements.txt', '.'),
         ('db', 'db'),
     ],
     hiddenimports=[
