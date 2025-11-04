@@ -1,41 +1,32 @@
 # 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO
-# Configuración profesional para despliegue médico
+# ============================================
 
 # ============================================
 # 🔒 DATOS SENSIBLES (NUNCA SUBIR)
 # ============================================
 
-# Base de datos hospitalaria (INFORMACIÓN MÉDICA CONFIDENCIAL)
-db.sqlite3
-db.sqlite3-journal
-db.sqlite3-wal
-db.sqlite3-shm
+# Base de datos
 *.sqlite3
 *.db
-triage_digital.sqlite3
-# Toda la carpeta de bases de datos
-*/db/
+db.sqlite3*
 triage_digital/db/
 **/db/*.sqlite3*
 
-# Archivos de configuración con secrets
+# Configuración sensible
 .env
-.env.*
 *.env
 secret_key.txt
-config/secrets.py
 
-# Logs del sistema (pueden contener información sensible)
+# Logs
 logs/
 *.log
-django.log
-triage.log
+triage_debug.log
 
 # ============================================
-# 🐍 PYTHON Y DJANGO
+# 🐍 PYTHON
 # ============================================
 
-# Python cache y compilados
+# Python cache
 __pycache__/
 *.py[cod]
 *.pyo
@@ -43,13 +34,10 @@ __pycache__/
 *.so
 *.egg-info/
 *.egg
-.pytest_cache/
 
-# Django específico
+# Django
 staticfiles/
-static_collected/
 media/
-migrations/__pycache__/
 
 # ============================================
 # 🔧 ENTORNO DE DESARROLLO
@@ -60,16 +48,12 @@ venv/
 .venv/
 env/
 ENV/
-.env/
-virtualenv/
 
-# IDEs y editores
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.sublime-*
 
 # ============================================
 # 💻 SISTEMA OPERATIVO
@@ -77,65 +61,16 @@ virtualenv/
 
 # macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 
 # Windows
 Thumbs.db
-ehthumbs.db
 Desktop.ini
-*.lnk
 
 # Linux
 *~
-.directory
 
 # ============================================
-# 📊 REPORTES Y ARCHIVOS GENERADOS
-# ============================================
-
-# PDFs generados (se regeneran automáticamente)
-reportes_generados/
-reporte_*.pdf
-triage_*.pdf
-
-# ============================================
-# 📁 ARCHIVOS DE DESARROLLO Y TEMPORALES
-# ============================================
-
-# Archivos de Microsoft Office
-*.docx
-*.xlsx
-*.pptx
-~$*
-
-# Archivos de configuración de PyInstaller
-*.spec
-
-# Archivos de instrucciones de desarrollo
-COMPILAR_APP.md
-PENDRIVE_INSTRUCTIONS.md
-APLICACION_LISTA.md
-
-# Carpetas de build y dist (PyInstaller)
-build/
-dist/
-*.egg-info/
-
-# Archivos temporales adicionales
-*.tmp
-*.bak
-*.swp
-*.swo
-
-# Backups de base de datos
-backup_*.sqlite3
-backup_*.sql
-*.backup
-*.dump
-
-# ============================================
-# 🔨 BUILD Y DISTRIBUCIÓN
+# � BUILD Y DISTRIBUCIÓN
 # ============================================
 
 # PyInstaller
@@ -143,46 +78,28 @@ build/
 dist/
 *.spec
 
-# ============================================
-# 🧪 TESTING Y DESARROLLO
-# ============================================
-
-# Coverage reports
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml
-
-# Testing
-.tox/
-.pytest_cache/
-*.cover
-
-# Archivos de demostración (solo para testing)
-demo_data.json
-test_*.sqlite3
-
-# ============================================
-# ⚡ PERFORMANCE Y CACHE
-# ============================================
-
-# Redis/Cache
-dump.rdb
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
 # Archivos temporales
 *.tmp
-*.temp
-*.pid
-*.lock
+*.bak
+*.backup
 
 # ============================================
-# 📝 DOCUMENTACIÓN TEMPORAL
+# � ARCHIVOS DE DESARROLLO
 # ============================================
 
-# Documentación autogenerada
-docs/_build/
-site/
+# Documentación de desarrollo
+COMPILAR_APP.md
+PENDRIVE_INSTRUCTIONS.md
+app_launcher_debug.py
+diagnose_executable.sh
+EJECUTABLE_SOLUCIONADO.md
+
+# Archivos de instalación de desarrollo
+instalar.sh
+
+# Testing y debug
+test_*.py
+debug_*.py
+*.cover
+.coverage
+htmlcov/

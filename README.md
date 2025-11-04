@@ -1,31 +1,38 @@
-# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO INTEGRADO
+# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO
 
-> **Sistema de clasificación médica de emergencia - TODO INTEGRADO EN UNA PANTALLA**  
-> *Dashboard unificado - Sin páginas separadas - Optimizado para velocidad crítica*
+> **Sistema completo de clasificación médica de emergencia y gestión hospitalaria**  
+> *Aplicación web desarrollada en Django con interfaz moderna y funcionalidades médicas especializadas*
 
----
+## 📋 DESCRIPCIÓN DEL PROYECTO
 
+Triage Digital es un sistema hospitalario completo que permite:
 
-### **⚡ Instalación Súper Rápida**
+- **🚨 Clasificación de Emergencias**: Sistema de triage según protocolos médicos
+- **👥 Gestión de Pacientes**: Registro completo de datos médicos y personales  
+- **👨‍⚕️ Gestión de Profesionales**: Control de personal médico y sus especialidades
+- **📊 Reportes**: Generación de informes en PDF con estadísticas médicas
+- **🔒 Seguridad**: Sistema de autenticación y control de acceso por roles
+
+## ⚡ INSTALACIÓN RÁPIDA
 
 ```bash
-# 1. Clonar proyecto
-git clone [URL_DEL_REPOSITORIO]
+# 1. Clonar el repositorio
+git clone <URL_DEL_REPOSITORIO>
 cd Triage
 
-# 2. Crear entorno virtual
+# 2. Crear y activar entorno virtual
 python3 -m venv venv
 source venv/bin/activate  # Linux/Mac
-# O en Windows: venv\Scripts\activate
+# En Windows: venv\Scripts\activate
 
-# 3. Instalar dependencias (solo 2 esenciales!)
+# 3. Instalar dependencias
 cd triage_digital
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 
-# 4. Configurar sistema automáticamente
+# 4. Configurar la base de datos
 python manage.py migrate
 
-# 5. 🔑 CREAR USUARIO ADMINISTRADOR (OBLIGATORIO)
+# 5. Crear usuario administrador
 python manage.py setup_admin
 
 # 6. Iniciar servidor
