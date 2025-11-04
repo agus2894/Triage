@@ -28,16 +28,22 @@ Triage Digital es un sistema hospitalario completo que permite:
    ./TriageDigital  # Linux/Mac
    # TriageDigital.exe  # Windows
    ```
+   
+   **Opciones avanzadas:**
+   ```bash
+   # Forzar puerto específico
+   ./TriageDigital --port=8002
+   
+   # O usando variable de entorno
+   PORT=8002 ./TriageDigital
+   TRIAGE_PORT=8002 ./TriageDigital
+   ```
 
 3. **Acceder:**
    - Se abrirá automáticamente en tu navegador
-   - URL: `http://127.0.0.1:8000`
+   - URL: Se muestra automáticamente (ej: `http://127.0.0.1:8000` o puerto libre)
    - **Admin:** `admin` / `123456`
    - **Triage:** DNI `00000000` / `123456`
-
-3. **Acceder al sistema:**
-   - El navegador se abrirá automáticamente en: `http://127.0.0.1:8001`
-   - **Usuario:** `admin`
    - **Contraseña:** `123456`
 
 **✅ Ventajas:** Sin dependencias, funciona inmediatamente, incluye todo lo necesario
