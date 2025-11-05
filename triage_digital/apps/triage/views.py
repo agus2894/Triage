@@ -170,19 +170,43 @@ def dashboard_principal(request):
 @login_required
 @require_http_methods(["POST"])
 def marcar_atendido(request, paciente_id):
-    """Marca un paciente como atendido (AJAX) y actualiza caches."""
+    """Marca un paciente con destino específico (AJAX) y actualiza caches."""
     try:
         paciente = get_object_or_404(Paciente, id=paciente_id, activo=True)
-        paciente.marcar_atendido()
+        
+        # Obtener destino del JSON data o POST data
+        import json
+        destino = 'ALTA'  # Default
+        
+        if request.content_type == 'application/json':
+            # Datos enviados como JSON
+            try:
+                data = json.loads(request.body)
+                destino = data.get('destino', 'ALTA')
+            except (json.JSONDecodeError, KeyError):
+                destino = 'ALTA'
+        else:
+            # Datos enviados como formulario
+            destino = request.POST.get('destino', 'ALTA')
+            
+        destinos_validos = {
+            'PASE_A_SALA': '🏥 Pase a Sala',
+            'ALTA': '✅ Alta',
+            'PASE_A_UTI': '🚨 Pase a UTI'
+        }
+        
+        if destino not in destinos_validos:
+            destino = 'ALTA'  # Default seguro
+        
+        paciente.marcar_atendido(destino)
         
         # 🚀 LIMPIAR CACHES para actualización inmediata
         cache.delete('dashboard_stats')
         cache.delete('patients_waiting')
         
-        
         return JsonResponse({
             'success': True,
-            'mensaje': f'Paciente {paciente.nombre_completo} marcado como atendido',
+            'mensaje': f'Paciente {paciente.nombre_completo} → {destinos_validos[destino]}',
             'estado': paciente.get_estado_atencion_display(),
             'tiempo': paciente.tiempo_espera
         })
@@ -270,8 +294,9 @@ def reporte_diario_pdf(request):
     Incluye:
     - 👩‍⚕️ Profesional que atendió cada paciente
     - 📊 NEWS Score detallado de cada caso
-    - ⏰ Horarios de atención
-    - 📈 Estadísticas por profesional
+    - ⏰ Horarios de atención y tiempo de espera
+    - 🏥 Destino de cada paciente (Sala/Alta/UTI)
+    - 📈 Estadísticas por profesional y destino
     """
     # 🔒 Verificar permisos de descarga
     profesional = _obtener_profesional(request)
@@ -285,31 +310,56 @@ def reporte_diario_pdf(request):
     # Datos del día actual
     hoy = timezone.now().date()
     
-    # 📊 CONSULTA OPTIMIZADA: Todos los datos necesarios en una sola query
+    # 📊 CONSULTA OPTIMIZADA: SignosVitales del día
     signos_del_dia = SignosVitales.objects.filter(
         fecha_hora__date=hoy
     ).select_related(
         'paciente', 'profesional__user'
     ).order_by('-fecha_hora')
     
+    # 🏥 CONSULTA OPTIMIZADA: Pacientes atendidos del día con destinos
+    from apps.patients.models import Paciente
+    pacientes_atendidos = Paciente.objects.filter(
+        fecha_atencion__date=hoy,
+        estado_atencion__in=['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
+    ).order_by('-fecha_atencion')
+    
+    # Para cada paciente, obtener el último SignosVitales para saber quién lo atendió
+    pacientes_con_profesional = []
+    for paciente in pacientes_atendidos:
+        ultimo_signo = SignosVitales.objects.filter(
+            paciente=paciente
+        ).select_related('profesional__user').order_by('-fecha_hora').first()
+        
+        pacientes_con_profesional.append({
+            'paciente': paciente,
+            'profesional': ultimo_signo.profesional if ultimo_signo else None
+        })
+    
     # 📈 Estadísticas generales
-    total = signos_del_dia.count()
+    total_evaluaciones = signos_del_dia.count()
     rojos = signos_del_dia.filter(nivel_urgencia='ROJO').count()
     amarillos = signos_del_dia.filter(nivel_urgencia='AMARILLO').count()
     verdes = signos_del_dia.filter(nivel_urgencia='VERDE').count()
     
+    # 🏥 Estadísticas por destino
+    total_atendidos = len(pacientes_con_profesional)
+    sala = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'PASE_A_SALA'])
+    altas = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'ALTA'])
+    uti = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'PASE_A_UTI'])
+    
     # 👩‍⚕️ Estadísticas por profesional
-    from django.db.models import Count
+    from django.db.models import Count, Avg
     stats_profesionales = signos_del_dia.values(
         'profesional__user__first_name',
         'profesional__user__last_name',
         'profesional__tipo'
     ).annotate(
-        total_atenciones=Count('id'),
+        total_evaluaciones=Count('id'),
         casos_rojos=Count('id', filter=models.Q(nivel_urgencia='ROJO')),
         casos_amarillos=Count('id', filter=models.Q(nivel_urgencia='AMARILLO')),
         casos_verdes=Count('id', filter=models.Q(nivel_urgencia='VERDE'))
-    ).order_by('-total_atenciones')
+    ).order_by('-total_evaluaciones')
     
     # Crear PDF completo
     response = HttpResponse(content_type='application/pdf')
@@ -327,10 +377,10 @@ def reporte_diario_pdf(request):
     p.drawString(50, height - 100, f"👤 Generado por: {profesional.user.get_full_name()} ({profesional.get_tipo_display()})")
     p.drawString(50, height - 120, f"⏰ Hora: {timezone.now().strftime('%H:%M')}")
     
-    # 📊 RESUMEN ESTADÍSTICO
+    # 📊 RESUMEN ESTADÍSTICO - EVALUACIONES
     y_pos = height - 160
     p.setFont("Helvetica-Bold", 18)
-    p.drawString(50, y_pos, "📊 RESUMEN DEL DÍA")
+    p.drawString(50, y_pos, "📊 EVALUACIONES DEL DÍA")
     
     y_pos -= 30
     p.setFont("Helvetica", 14)
@@ -341,12 +391,28 @@ def reporte_diario_pdf(request):
     p.drawString(70, y_pos, f"🟢 Casos Leves (VERDE): {verdes}")
     y_pos -= 20
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(70, y_pos, f"📈 TOTAL ATENCIONES: {total}")
+    p.drawString(70, y_pos, f"📈 TOTAL EVALUACIONES: {total_evaluaciones}")
+    
+    # 🏥 RESUMEN ESTADÍSTICO - DESTINOS
+    y_pos -= 50
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(50, y_pos, "🏥 DESTINOS DE PACIENTES")
+    
+    y_pos -= 30
+    p.setFont("Helvetica", 14)
+    p.drawString(70, y_pos, f"🏥 Pase a Sala: {sala}")
+    y_pos -= 20
+    p.drawString(70, y_pos, f"✅ Altas: {altas}")
+    y_pos -= 20
+    p.drawString(70, y_pos, f"🚨 Pase a UTI: {uti}")
+    y_pos -= 20
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(70, y_pos, f"📈 TOTAL ATENDIDOS: {total_atendidos}")
     
     # 👩‍⚕️ RENDIMIENTO POR PROFESIONAL
     y_pos -= 50
     p.setFont("Helvetica-Bold", 18)
-    p.drawString(50, y_pos, "👩‍⚕️ RENDIMIENTO POR PROFESIONAL")
+    p.drawString(50, y_pos, "👩‍⚕️ EVALUACIONES POR PROFESIONAL")
     
     y_pos -= 25
     p.setFont("Helvetica-Bold", 12)
@@ -364,46 +430,77 @@ def reporte_diario_pdf(request):
                    "👨‍⚕️" if stat['profesional__tipo'] == 'medico' else "👩‍⚕️"
         
         p.drawString(70, y_pos, f"{tipo_icon} {nombre}")
-        p.drawString(260, y_pos, str(stat['total_atenciones']))
+        p.drawString(260, y_pos, str(stat['total_evaluaciones']))
         p.drawString(310, y_pos, str(stat['casos_rojos']))
         p.drawString(370, y_pos, str(stat['casos_amarillos']))
         p.drawString(440, y_pos, str(stat['casos_verdes']))
         y_pos -= 15
+        
+        if y_pos < 200:  # Si no hay espacio, crear nueva página
+            break
     
-    # 📋 DETALLE DE CASOS (si hay espacio)
-    if y_pos > 200 and total <= 15:  # Solo si cabe en la página
+    # 📋 DETALLE DE PACIENTES ATENDIDOS (Nueva sección)
+    if y_pos < 300:  # Si queda poco espacio, nueva página
+        p.showPage()
+        y_pos = height - 50
+    else:
         y_pos -= 30
-        p.setFont("Helvetica-Bold", 18)
-        p.drawString(50, y_pos, "📋 DETALLE DE CASOS")
+    
+    p.setFont("Helvetica-Bold", 18)
+    p.drawString(50, y_pos, "📋 PACIENTES ATENDIDOS HOY")
+    
+    y_pos -= 25
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(50, y_pos, "HORA ATEN.")
+    p.drawString(130, y_pos, "PACIENTE")
+    p.drawString(250, y_pos, "DESTINO")
+    p.drawString(330, y_pos, "T.ESPERA")
+    p.drawString(400, y_pos, "PROFESIONAL")
+    
+    y_pos -= 15
+    p.setFont("Helvetica", 9)
+    
+    for item in pacientes_con_profesional[:20]:  # Máximo 20 pacientes
+        paciente = item['paciente']
+        profesional = item['profesional']
         
-        y_pos -= 25
-        p.setFont("Helvetica-Bold", 10)
-        p.drawString(50, y_pos, "HORA")
-        p.drawString(100, y_pos, "PACIENTE")
-        p.drawString(220, y_pos, "NEWS")
-        p.drawString(260, y_pos, "NIVEL")
-        p.drawString(320, y_pos, "PROFESIONAL")
-        
-        y_pos -= 15
-        p.setFont("Helvetica", 9)
-        
-        for signo in signos_del_dia[:15]:  # Máximo 15 casos
-            if y_pos < 50:  # Si no hay espacio, parar
-                break
-                
-            hora = signo.fecha_hora.strftime('%H:%M')
-            paciente = signo.paciente.nombre_completo[:15]
-            news = str(signo.news_score)
-            nivel_icon = "🔴" if signo.nivel_urgencia == 'ROJO' else \
-                        "🟡" if signo.nivel_urgencia == 'AMARILLO' else "🟢"
-            profesional_nombre = signo.profesional.user.first_name[:12]
+        if y_pos < 50:  # Si no hay espacio, nueva página
+            p.showPage()
+            y_pos = height - 50
             
-            p.drawString(50, y_pos, hora)
-            p.drawString(100, y_pos, paciente)
-            p.drawString(230, y_pos, news)
-            p.drawString(260, y_pos, f"{nivel_icon} {signo.nivel_urgencia}")
-            p.drawString(320, y_pos, profesional_nombre)
-            y_pos -= 12
+            # Repetir headers en nueva página
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(50, y_pos, "HORA ATEN.")
+            p.drawString(130, y_pos, "PACIENTE")
+            p.drawString(250, y_pos, "DESTINO")
+            p.drawString(330, y_pos, "T.ESPERA")
+            p.drawString(400, y_pos, "PROFESIONAL")
+            y_pos -= 15
+            p.setFont("Helvetica", 9)
+        
+        # Calcular tiempo de espera
+        tiempo_espera = (paciente.fecha_atencion - paciente.fecha_ingreso).total_seconds() / 60
+        tiempo_str = f"{int(tiempo_espera)}m" if tiempo_espera < 60 else f"{int(tiempo_espera/60)}h{int(tiempo_espera%60)}m"
+        
+        # Obtener destino con emoji
+        destino_emojis = {
+            'PASE_A_SALA': '🏥 Sala',
+            'ALTA': '✅ Alta',
+            'PASE_A_UTI': '🚨 UTI'
+        }
+        destino_texto = destino_emojis.get(paciente.estado_atencion, paciente.estado_atencion)
+        
+        # Datos del paciente
+        hora_atencion = paciente.fecha_atencion.strftime('%H:%M')
+        nombre_paciente = paciente.nombre_completo[:15]
+        profesional_str = profesional.user.first_name[:12] if profesional and profesional.user else "N/A"
+        
+        p.drawString(50, y_pos, hora_atencion)
+        p.drawString(130, y_pos, nombre_paciente)
+        p.drawString(250, y_pos, destino_texto)
+        p.drawString(330, y_pos, tiempo_str)
+        p.drawString(400, y_pos, profesional_str)
+        y_pos -= 12
     
     # 📝 FOOTER
     p.setFont("Helvetica", 8)
@@ -411,28 +508,6 @@ def reporte_diario_pdf(request):
     p.drawString(50, 20, f"🔒 Acceso autorizado para: {profesional.get_tipo_display()}")
     
     # Finalizar PDF
-    p.showPage()
-    p.save()
-    
-    return response
-    p.drawString(50, 750, f"🏥 REPORTE TRIAGE DIARIO - {hoy.strftime('%d/%m/%Y')}")
-    
-    # Datos esenciales
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, 700, "📊 RESUMEN DEL DÍA:")
-    
-    p.setFont("Helvetica", 14)
-    p.drawString(70, 670, f"🔴 CRÍTICOS (ROJO): {rojos} pacientes")
-    p.drawString(70, 650, f"🟡 MODERADOS (AMARILLO): {amarillos} pacientes")
-    p.drawString(70, 630, f"🟢 ESTABLES (VERDE): {verdes} pacientes")
-    
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(70, 600, f"📈 TOTAL ATENDIDOS: {total} pacientes")
-    
-    # Pie simple
-    p.setFont("Helvetica", 10)
-    p.drawString(50, 50, f"Generado el {timezone.now().strftime('%d/%m/%Y %H:%M')} | Sistema Triage Digital")
-    
     p.showPage()
     p.save()
     

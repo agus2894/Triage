@@ -37,8 +37,11 @@ class PacienteManager(models.Manager):
             fecha_ingreso__date=fecha
         ).aggregate(
             total=models.Count('id'),
-            atendidos=models.Count('id', filter=models.Q(estado_atencion='ATENDIDO')),
+            atendidos=models.Count('id', filter=models.Q(estado_atencion__in=['PASE_A_SALA', 'ALTA', 'PASE_A_UTI'])),
             en_espera=models.Count('id', filter=models.Q(estado_atencion='ESPERANDO')),
+            pase_a_sala=models.Count('id', filter=models.Q(estado_atencion='PASE_A_SALA')),
+            altas=models.Count('id', filter=models.Q(estado_atencion='ALTA')),
+            pase_a_uti=models.Count('id', filter=models.Q(estado_atencion='PASE_A_UTI')),
         )
 
 
@@ -109,7 +112,9 @@ class Paciente(models.Model):
     ESTADO_CHOICES = [
         ('ESPERANDO', '⏳ Esperando atención'),
         ('EN_ATENCION', '👩‍⚕️ En atención'),
-        ('ATENDIDO', '✅ Atendido'),
+        ('PASE_A_SALA', '🏥 Pase a Sala'),
+        ('ALTA', '✅ Alta'),
+        ('PASE_A_UTI', '🚨 Pase a UTI'),
         ('DERIVADO', '🏥 Derivado'),
     ]
     
@@ -179,8 +184,13 @@ class Paciente(models.Model):
     @property
     def tiempo_espera(self):
         """Tiempo de espera formateado - OPTIMIZADO."""
-        if self.estado_atencion == 'ATENDIDO':
-            return "✅ Atendido"
+        if self.estado_atencion in ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']:
+            estado_emojis = {
+                'PASE_A_SALA': '🏥 Pase a Sala',
+                'ALTA': '✅ Alta',
+                'PASE_A_UTI': '🚨 Pase a UTI'
+            }
+            return estado_emojis.get(self.estado_atencion, "✅ Atendido")
         if self.estado_atencion == 'EN_ATENCION':
             return "👩‍⚕️ En atención"
             
@@ -202,7 +212,7 @@ class Paciente(models.Model):
     @property
     def tiempo_espera_minutos(self):
         """Tiempo de espera en minutos para cálculos - OPTIMIZADO."""
-        if self.estado_atencion in ['ATENDIDO', 'EN_ATENCION']:
+        if self.estado_atencion in ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI', 'EN_ATENCION']:
             return 0
         
         # Usar cache si existe
@@ -224,13 +234,18 @@ class Paciente(models.Model):
             return ultimo_triage.nivel_urgencia in ['ROJO', 'AMARILLO']
         return False
     
-    def marcar_atendido(self):
-        """Marca el paciente como atendido y actualiza fecha - OPTIMIZADO."""
+    def marcar_atendido(self, destino='ALTA'):
+        """Marca el paciente con destino específico y actualiza fecha - OPTIMIZADO."""
+        # Validar destino
+        destinos_validos = ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
+        if destino not in destinos_validos:
+            destino = 'ALTA'  # Default seguro
+            
         # Usar update() para ser más eficiente que save()
         Paciente.objects.filter(id=self.id).update(
-            estado_atencion='ATENDIDO',
+            estado_atencion=destino,
             fecha_atencion=timezone.now()
         )
         # Actualizar instancia actual
-        self.estado_atencion = 'ATENDIDO'
+        self.estado_atencion = destino
         self.fecha_atencion = timezone.now()

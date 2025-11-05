@@ -239,11 +239,26 @@
                                                     <small class="${tiempoColor} me-2">
                                                         <i class="bi bi-clock"></i> ${paciente.tiempo_espera}
                                                     </small>
-                                                    <button class="btn btn-success btn-sm" 
-                                                            onclick="marcarAtendido(${paciente.id}, '${paciente.nombre_completo}')"
-                                                            title="Marcar como atendido">
-                                                        <i class="bi bi-check"></i>
-                                                    </button>
+                                                    <div class="btn-group" role="group" style="gap: 4px;">
+                                                        <button class="btn btn-primary btn-sm px-3 py-2" 
+                                                                onclick="marcarAtendido(${paciente.id}, '${paciente.nombre_completo}', 'PASE_A_SALA')"
+                                                                title="Pase a Sala"
+                                                                style="min-width: 45px;">
+                                                            <i class="bi bi-hospital"></i>
+                                                        </button>
+                                                        <button class="btn btn-success btn-sm px-3 py-2" 
+                                                                onclick="marcarAtendido(${paciente.id}, '${paciente.nombre_completo}', 'ALTA')"
+                                                                title="Alta"
+                                                                style="min-width: 45px;">
+                                                            <i class="bi bi-check-circle"></i>
+                                                        </button>
+                                                        <button class="btn btn-warning btn-sm px-3 py-2" 
+                                                                onclick="marcarAtendido(${paciente.id}, '${paciente.nombre_completo}', 'PASE_A_UTI')"
+                                                                title="Pase a UTI"
+                                                                style="min-width: 45px;">
+                                                            <i class="bi bi-exclamation-triangle"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -276,20 +291,31 @@
             setInterval(cargarPacientes, 30000); // Actualizar cada 30 segundos
         }
         
-        // Función para marcar paciente como atendido
-        function marcarAtendido(pacienteId, nombrePaciente) {
-            if (!confirm(`¿Confirma que ${nombrePaciente} ha sido atendido?`)) {
+        // Función para marcar paciente como atendido con destino específico
+        function marcarAtendido(pacienteId, nombrePaciente, destino) {
+            const destinosTexto = {
+                'PASE_A_SALA': 'será trasladado a Sala',
+                'ALTA': 'será dado de alta',
+                'PASE_A_UTI': 'será trasladado a UTI'
+            };
+            
+            const textoDestino = destinosTexto[destino] || 'será atendido';
+            
+            if (!confirm(`¿Confirma que ${nombrePaciente} ${textoDestino}?`)) {
                 return;
             }
             
-            // Deshabilitar botón mientras se procesa
-            const botones = document.querySelectorAll(`button[onclick="marcarAtendido(${pacienteId}, '${nombrePaciente}')"]`);
-            botones.forEach(btn => {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-            });
+            // Deshabilitar todos los botones del grupo mientras se procesa
+            const contenedorBotones = document.querySelector(`#paciente-${pacienteId} .btn-group`);
+            if (contenedorBotones) {
+                const botones = contenedorBotones.querySelectorAll('button');
+                botones.forEach(btn => {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                });
+            }
             
-            // Llamada AJAX para marcar como atendido
+            // Llamada AJAX para marcar como atendido con destino específico
             fetch(`/triage/paciente/${pacienteId}/atendido/`, {
                 method: 'POST',
                 headers: {
@@ -297,13 +323,24 @@
                                    document.querySelector('meta[name=csrf-token]')?.content ||
                                    getCookie('csrftoken'),
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    destino: destino
+                })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    const mensajesExito = {
+                        'PASE_A_SALA': `🏥 ${nombrePaciente} trasladado a Sala`,
+                        'ALTA': `✅ ${nombrePaciente} dado de alta`,
+                        'PASE_A_UTI': `🚨 ${nombrePaciente} trasladado a UTI`
+                    };
+                    
+                    const mensajeExito = mensajesExito[destino] || `✅ ${nombrePaciente} atendido`;
+                    
                     // Mostrar mensaje de éxito
-                    mostrarMensaje(`✅ ${nombrePaciente} marcado como atendido`, 'success');
+                    mostrarMensaje(mensajeExito, 'success');
                     
                     // Remover de la vista inmediatamente
                     const tarjeta = document.getElementById(`paciente-${pacienteId}`);
@@ -331,20 +368,38 @@
                 } else {
                     mostrarMensaje(`❌ Error: ${data.error}`, 'error');
                     // Rehabilitar botones
-                    botones.forEach(btn => {
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-check"></i>';
-                    });
+                    if (contenedorBotones) {
+                        const botones = contenedorBotones.querySelectorAll('button');
+                        const iconos = {
+                            'PASE_A_SALA': '<i class="bi bi-hospital"></i>',
+                            'ALTA': '<i class="bi bi-check-circle"></i>',
+                            'PASE_A_UTI': '<i class="bi bi-exclamation-triangle"></i>'
+                        };
+                        botones.forEach((btn, index) => {
+                            btn.disabled = false;
+                            const destinosArray = ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI'];
+                            btn.innerHTML = iconos[destinosArray[index]] || '<i class="bi bi-check"></i>';
+                        });
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 mostrarMensaje('❌ Error de conexión', 'error');
                 // Rehabilitar botones
-                botones.forEach(btn => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-check"></i>';
-                });
+                if (contenedorBotones) {
+                    const botones = contenedorBotones.querySelectorAll('button');
+                    const iconos = {
+                        'PASE_A_SALA': '<i class="bi bi-hospital"></i>',
+                        'ALTA': '<i class="bi bi-check-circle"></i>',
+                        'PASE_A_UTI': '<i class="bi bi-exclamation-triangle"></i>'
+                    };
+                    botones.forEach((btn, index) => {
+                        btn.disabled = false;
+                        const destinosArray = ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI'];
+                        btn.innerHTML = iconos[destinosArray[index]] || '<i class="bi bi-check"></i>';
+                    });
+                }
             });
         }
         
