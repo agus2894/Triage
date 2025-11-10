@@ -174,6 +174,9 @@ def marcar_atendido(request, paciente_id):
     try:
         paciente = get_object_or_404(Paciente, id=paciente_id, activo=True)
         
+        # Obtener profesional actual
+        profesional = _obtener_profesional(request)
+        
         # Obtener destino del JSON data o POST data
         import json
         destino = 'ALTA'  # Default
@@ -198,7 +201,8 @@ def marcar_atendido(request, paciente_id):
         if destino not in destinos_validos:
             destino = 'ALTA'  # Default seguro
         
-        paciente.marcar_atendido(destino)
+        # Marcar como atendido con el profesional que lo atiende
+        paciente.marcar_atendido(destino, profesional)
         
         # 🚀 LIMPIAR CACHES para actualización inmediata
         cache.delete('dashboard_stats')
@@ -317,24 +321,12 @@ def reporte_diario_pdf(request):
         'paciente', 'profesional__user'
     ).order_by('-fecha_hora')
     
-    # 🏥 CONSULTA OPTIMIZADA: Pacientes atendidos del día con destinos
+    # 🏥 CONSULTA OPTIMIZADA: Pacientes atendidos del día con destinos y profesional
     from apps.patients.models import Paciente
     pacientes_atendidos = Paciente.objects.filter(
         fecha_atencion__date=hoy,
         estado_atencion__in=['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
-    ).order_by('-fecha_atencion')
-    
-    # Para cada paciente, obtener el último SignosVitales para saber quién lo atendió
-    pacientes_con_profesional = []
-    for paciente in pacientes_atendidos:
-        ultimo_signo = SignosVitales.objects.filter(
-            paciente=paciente
-        ).select_related('profesional__user').order_by('-fecha_hora').first()
-        
-        pacientes_con_profesional.append({
-            'paciente': paciente,
-            'profesional': ultimo_signo.profesional if ultimo_signo else None
-        })
+    ).select_related('profesional_atencion__user').order_by('-fecha_atencion')
     
     # 📈 Estadísticas generales
     total_evaluaciones = signos_del_dia.count()
@@ -343,10 +335,10 @@ def reporte_diario_pdf(request):
     verdes = signos_del_dia.filter(nivel_urgencia='VERDE').count()
     
     # 🏥 Estadísticas por destino
-    total_atendidos = len(pacientes_con_profesional)
-    sala = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'PASE_A_SALA'])
-    altas = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'ALTA'])
-    uti = len([p for p in pacientes_con_profesional if p['paciente'].estado_atencion == 'PASE_A_UTI'])
+    total_atendidos = pacientes_atendidos.count()
+    sala = pacientes_atendidos.filter(estado_atencion='PASE_A_SALA').count()
+    altas = pacientes_atendidos.filter(estado_atencion='ALTA').count()
+    uti = pacientes_atendidos.filter(estado_atencion='PASE_A_UTI').count()
     
     # 👩‍⚕️ Estadísticas por profesional
     from django.db.models import Count, Avg
@@ -460,10 +452,7 @@ def reporte_diario_pdf(request):
     y_pos -= 15
     p.setFont("Helvetica", 9)
     
-    for item in pacientes_con_profesional[:20]:  # Máximo 20 pacientes
-        paciente = item['paciente']
-        profesional = item['profesional']
-        
+    for paciente in pacientes_atendidos[:20]:  # Máximo 20 pacientes        
         if y_pos < 50:  # Si no hay espacio, nueva página
             p.showPage()
             y_pos = height - 50
@@ -493,7 +482,11 @@ def reporte_diario_pdf(request):
         # Datos del paciente
         hora_atencion = paciente.fecha_atencion.strftime('%H:%M')
         nombre_paciente = paciente.nombre_completo[:15]
-        profesional_str = profesional.user.first_name[:12] if profesional and profesional.user else "N/A"
+        
+        # Obtener profesional que atendió (usando el nuevo campo)
+        profesional_str = "N/A"
+        if paciente.profesional_atencion and paciente.profesional_atencion.user:
+            profesional_str = f"{paciente.profesional_atencion.user.first_name} {paciente.profesional_atencion.user.last_name}"[:12]
         
         p.drawString(50, y_pos, hora_atencion)
         p.drawString(130, y_pos, nombre_paciente)

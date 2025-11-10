@@ -133,6 +133,16 @@ class Paciente(models.Model):
         help_text="Momento en que fue atendido el paciente"
     )
     
+    profesional_atencion = models.ForeignKey(
+        'triage.Profesional',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='pacientes_atendidos',
+        verbose_name="Profesional que Atendió",
+        help_text="Profesional que marcó al paciente como atendido"
+    )
+    
     activo = models.BooleanField(
         default=True,
         verbose_name="Activo",
@@ -234,18 +244,27 @@ class Paciente(models.Model):
             return ultimo_triage.nivel_urgencia in ['ROJO', 'AMARILLO']
         return False
     
-    def marcar_atendido(self, destino='ALTA'):
-        """Marca el paciente con destino específico y actualiza fecha - OPTIMIZADO."""
+    def marcar_atendido(self, destino='ALTA', profesional=None):
+        """Marca el paciente con destino específico, profesional y actualiza fecha - OPTIMIZADO."""
         # Validar destino
         destinos_validos = ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
         if destino not in destinos_validos:
             destino = 'ALTA'  # Default seguro
             
         # Usar update() para ser más eficiente que save()
-        Paciente.objects.filter(id=self.id).update(
-            estado_atencion=destino,
-            fecha_atencion=timezone.now()
-        )
+        update_data = {
+            'estado_atencion': destino,
+            'fecha_atencion': timezone.now()
+        }
+        
+        if profesional:
+            update_data['profesional_atencion'] = profesional
+            
+        Paciente.objects.filter(id=self.id).update(**update_data)
+        
         # Actualizar instancia actual
         self.estado_atencion = destino
+        self.fecha_atencion = timezone.now()
+        if profesional:
+            self.profesional_atencion = profesional
         self.fecha_atencion = timezone.now()
