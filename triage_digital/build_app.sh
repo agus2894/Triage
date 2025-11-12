@@ -6,13 +6,13 @@ echo "🏥 COMPILANDO TRIAGE DIGITAL - APP AUTÓNOMA"
 echo "============================================"
 
 # Activar entorno virtual
-if [ -f "../venv/bin/activate" ]; then
+if [ -f "../.venv/bin/activate" ]; then
     echo "🐍 Activando entorno virtual..."
-    source ../venv/bin/activate
+    source ../.venv/bin/activate
 else
-    echo "⚠️  Entorno virtual ../venv no encontrado. Creando uno..."
-    python3 -m venv ../venv
-    source ../venv/bin/activate
+    echo "⚠️  Entorno virtual ../.venv no encontrado. Creando uno..."
+    python3 -m .venv ../.venv
+    source ../.venv/bin/activate
     pip install -r ../requirements.txt
 fi
 
