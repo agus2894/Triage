@@ -3,7 +3,7 @@
 
 Django==5.2.5          # Framework web principal
 reportlab==4.2.5       # Generación de PDFs para reportes médicos
-psycopg2-binary==2.9.9 # Conexión a PostgreSQL
+psycopg2-binary>=2.9.10 # Conexión a PostgreSQL (compatible con Python 3.13)
 
 # Dependencias automáticas de Django (se instalan solas)
 # - asgiref
