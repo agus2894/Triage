@@ -105,9 +105,6 @@ Sistema hospitalario para clasificación médica de emergencias con funcionalida
 
 - **Interfaz**: Web responsiva, acceso desde cualquier navegador- **Interfaz**: Web responsiva, acceso desde cualquier navegador
 
-- **Tamaño**: 35MB (ejecutable completo)- **Tamaño**: 35MB (ejecutable completo)
-
-
 ------
 *Sistema desarrollado para optimizar la atención médica de emergencias*
 *Sistema desarrollado para optimizar la atención médica de emergencias**Sistema desarrollado para optimizar la atención médica de emergencias*
