@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-🏥 TRIAGE DIGITAL - LAUNCHER CLOUD
-==================================
-Versión para ejecutable con BD en Render
+🏥 TRIAGE DIGITAL - LAUNCHER HÍBRIDO
+====================================
+Versión con soporte Online/Offline automático
 """
 
 import os
@@ -20,7 +20,7 @@ def main():
     
     # Configurar sys.argv PRIMERO
     if not sys.argv or len(sys.argv) == 0:
-        sys.argv = ['TriageDigitalCloud']
+        sys.argv = ['TriageDigitalHybrid']
     
     # Configurar Django
     print("📋 Configurando sistema...")
@@ -28,7 +28,7 @@ def main():
     
     try:
         import django
-        from django.core.management import execute_from_command_line
+        from django.core.management import execute_from_command_line, call_command
         django.setup()
         print("✅ Sistema configurado")
         
@@ -36,12 +36,75 @@ def main():
         print(f"❌ Error de configuración: {e}")
         input("Presiona Enter para salir...")
         return
-    
-    # NO ejecutamos migraciones - ya están en Render
-    print("📊 Base de datos en Render - Lista")
+
+    # Verificar modo de operación y configurar BD si es necesario
+    _setup_database()
     
     # Arrancar servidor
     print("🚀 Iniciando servidor web...")
+
+def _setup_database():
+    """Configura la base de datos según el modo (online/offline)"""
+    try:
+        from django.conf import settings
+        from django.core.management import call_command
+        from pathlib import Path
+        
+        db_engine = settings.DATABASES['default']['ENGINE']
+        
+        if 'postgresql' in db_engine:
+            print("🌐 Modo ONLINE - PostgreSQL en Render")
+            print("📊 Colaboración habilitada con tu colega")
+        elif 'sqlite3' in db_engine:
+            print("💾 Modo OFFLINE - SQLite local")
+            print("📱 Perfecto para presentaciones sin internet")
+            
+            # Verificar si existe la BD offline
+            db_path = Path(settings.DATABASES['default']['NAME'])
+            if not db_path.exists():
+                print("⚙️  Configurando BD offline por primera vez...")
+                try:
+                    call_command('setup_offline', verbosity=0, interactive=False)
+                    print("✅ BD offline configurada con datos de demostración")
+                    print("🎯 Usuario: admin / Contraseña: admin123")
+                except Exception as e:
+                    print(f"⚠️  Error configurando BD offline: {e}")
+                    print("📋 Ejecutando migraciones básicas...")
+                    call_command('migrate', verbosity=0, interactive=False)
+            else:
+                print("✅ BD offline disponible")
+        else:
+            print("⚠️  Modo de BD desconocido")
+            
+    except Exception as e:
+        print(f"⚠️  Error verificando BD: {e}")
+        print("📋 Continuando con configuración básica...")
+
+def main():
+    print("🏥 Iniciando Triage Digital...")
+    print("============================")
+    
+    # Configurar sys.argv PRIMERO
+    if not sys.argv or len(sys.argv) == 0:
+        sys.argv = ['TriageDigitalHybrid']
+    
+    # Configurar Django
+    print("📋 Configurando sistema...")
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+    
+    try:
+        import django
+        from django.core.management import execute_from_command_line, call_command
+        django.setup()
+        print("✅ Sistema configurado")
+        
+    except Exception as e:
+        print(f"❌ Error de configuración: {e}")
+        input("Presiona Enter para salir...")
+        return
+
+    # Verificar modo de operación y configurar BD si es necesario
+    _setup_database()
 
     # Determinar puerto: 1) argumento --port, 2) env PORT, 3) por defecto 8000
     def _parse_port():

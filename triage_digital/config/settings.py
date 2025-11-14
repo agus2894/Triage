@@ -66,20 +66,31 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Base de datos PostgreSQL en Render (PRODUCCIÓN)
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'triage_db',
-        'USER': 'triage_user',
-        'PASSWORD': '3cntLJMgwEOKtlTEunIvBuzV6Fw7DY2r',
-        'HOST': 'dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com',
-        'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+# Database - Configuración Híbrida Online/Offline
+# Detecta automáticamente si hay conexión a internet y usa:
+# - PostgreSQL en Render (modo colaborativo online) 
+# - SQLite local (modo presentación offline)
+
+# Importar utilidades de base de datos
+try:
+    from .database_utils import get_database_config
+    DATABASES = get_database_config()
+except ImportError:
+    # Fallback a configuración fija si hay problemas
+    print("⚠️  Usando configuración de BD fija (fallback)")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'triage_db',
+            'USER': 'triage_user',
+            'PASSWORD': '3cntLJMgwEOKtlTEunIvBuzV6Fw7DY2r',
+            'HOST': 'dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com',
+            'PORT': '5432',
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
+        }
     }
-}
 
 AUTH_PASSWORD_VALIDATORS = []
 

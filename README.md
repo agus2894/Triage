@@ -1,256 +1,113 @@
-# 🏥 TRIAGE DIGITAL - SISTEMA HOSPITALARIO
+# 🏥 TRIAGE DIGITAL# 🏥 TRIAGE DIGITAL
 
-> **Sistema completo de clasificación médica de emergencia y gestión hospitalaria**  
-> *Aplicación web desarrollada en Django con interfaz moderna y funcionalidades médicas especializadas*
 
-## 📋 DESCRIPCIÓN DEL PROYECTO
+Sistema hospitalario para clasificación médica de emergencias con funcionalidad online y offline.Sistema hospitalario para clasificación médica de emergencias con funcionalidad online y offline.
 
-Triage Digital es un sistema hospitalario completo que permite:
+## 🚀 EJECUCIÓN## 🚀 EJECUCIÓN
 
-- **🚨 Clasificación de Emergencias**: Sistema de triage según protocolos médicos
-- **👥 Gestión de Pacientes**: Registro completo de datos médicos y personales  
-- **👨‍⚕️ Gestión de Profesionales**: Control de personal médico y sus especialidades
-- **📊 Reportes**: Generación de informes en PDF con estadísticas médicas
-- **🔒 Seguridad**: Sistema de autenticación y control de acceso por roles
 
-## 🚀 OPCIONES DE INSTALACIÓN
 
-### 💻 **OPCIÓN 1: EJECUTABLE (Recomendado para usuarios finales)**
+- **Con internet**: Colaboración en tiempo real (PostgreSQL)- **Con internet**: Colaboración en tiempo real (PostgreSQL)
 
-**📥 Descarga directa - Sin instalación**
 
-1. **Descargar el ejecutable:**
-   - Solicita el archivo `TriageDigital` al desarrollador
-   - O compílalo siguiendo las instrucciones de desarrollo
+## ⚕️ FUNCIONES PRINCIPALES## ⚕️ FUNCIONES PRINCIPALES
 
-2. **Ejecutar:**
-   ```bash
-   ./TriageDigital  # Linux/Mac
-   # TriageDigital.exe  # Windows
-   ```
-   
-   **Opciones avanzadas:**
-   ```bash
-   # Forzar puerto específico
-   ./TriageDigital --port=8002
-   
-   # O usando variable de entorno
-   PORT=8002 ./TriageDigital
-   TRIAGE_PORT=8002 ./TriageDigital
-   ```
 
-3. **Acceder:**
-   - Se abrirá automáticamente en tu navegador
-   - URL: Se muestra automáticamente (ej: `http://127.0.0.1:8000` o puerto libre)
-   - **Admin:** `admin` / `123456`
-   - **Triage:** DNI `00000000` / `123456`
-   - **Contraseña:** `123456`
 
-**✅ Ventajas:** Sin dependencias, funciona inmediatamente, incluye todo lo necesario
+### 🚨 **TRIAGE DE PACIENTES**### 🚨 **TRIAGE DE PACIENTES**
 
----
+- Registro de datos básicos del paciente- Registro de datos básicos del paciente
 
-### 🛠️ **OPCIÓN 2: INSTALACIÓN DESDE CÓDIGO FUENTE**
+- Medición de 6 signos vitales críticos- Medición de 6 signos vitales críticos
 
-**📋 Requisitos previos:**
-- Python 3.8 o superior
-- Git
-- 50MB de espacio libre
+- **Cálculo automático NEWS Score** (0-20 puntos)- **Cálculo automático NEWS Score** (0-20 puntos)
 
-**⚡ Instalación paso a paso:**
+- **Clasificación por colores**:- **Clasificación por colores**:
 
-```bash
-# 1. Clonar el repositorio
-git clone https://github.com/agus2894/Triage.git
-cd Triage
+  - 🔴 **ROJO**: Emergencia (NEWS ≥ 7)  - 🔴 **ROJO**: Emergencia (NEWS ≥ 7)
 
-# 2. Crear y activar entorno virtual
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# En Windows: venv\Scripts\activate
+  - 🟡 **AMARILLO**: Urgente (NEWS 3-6)    - 🟡 **AMARILLO**: Urgente (NEWS 3-6)  
 
-# 3. Instalar dependencias
-pip install -r requirements.txt
-
-# 4. Configurar la base de datos
-cd triage_digital
-python manage.py migrate
-python manage.py setup_admin
-
-# 5. Iniciar servidor
-python manage.py runserver 127.0.0.1:8001
-```
-
-**🌐 Acceder al sistema:**
-- URL: `http://127.0.0.1:8001`
-- **Usuario:** `admin`
-- **Contraseña:** `123456`
-
----
-
-### 🔨 **OPCIÓN 3: COMPILAR TU PROPIO EJECUTABLE**
-
-**Para desarrolladores que quieren crear el ejecutable:**
-
-```bash
-# 1. Seguir pasos de la Opción 2 hasta el paso 4
-
-# 2. Instalar PyInstaller
-pip install pyinstaller
+  - 🟢 **VERDE**: No urgente (NEWS 0-2)  - 🟢 **VERDE**: No urgente (NEWS 0-2)
 
-# 3. Compilar ejecutable
-pyinstaller app_launcher.py --onefile --name TriageDigital
-
-# 4. El ejecutable estará en: dist/TriageDigital
-```
-
-## 🔑 **CREDENCIALES DE ACCESO**
-
-### **👤 Usuario Administrador:**
-- **Usuario:** `admin`
-- **Contraseña:** `123456`
-- **Permisos:** Acceso completo al sistema
-
-### **🏥 Usuario Triage:**
-- **DNI:** `00000000`
-- **Contraseña:** `123456`  
-- **Permisos:** Registro y clasificación de pacientes
-
-> **⚠️ IMPORTANTE:** Cambiar las contraseñas por defecto en entorno de producción
-
-## ❓ **SOLUCIÓN DE PROBLEMAS**
-
-### **🐛 Problemas comunes:**
-
-**Error: "No module named 'django'"**
-```bash
-# Asegúrate de activar el entorno virtual
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-**Error: "Port is already in use"**
-```bash
-# Usar otro puerto
-python manage.py runserver 127.0.0.1:8002
-```
-
-**Error de base de datos**
-```bash
-# Recrear la base de datos
-rm db/triage_digital.sqlite3
-python manage.py migrate
-python manage.py setup_admin
-```
-
-**El ejecutable no inicia**
-```bash
-# Verificar permisos (Linux/Mac)
-chmod +x TriageDigital
-./TriageDigital
-```
-
-### **� Soporte:**
-- Reportar problemas en: [GitHub Issues](https://github.com/agus2894/Triage/issues)
-- Desarrollador: agus2894
-
-## 🏗️ **TECNOLOGÍAS UTILIZADAS**
-
-- **Backend:** Django 5.2.5
-- **Base de datos:** SQLite
-- **Frontend:** HTML5, CSS3, Bootstrap
-- **PDF:** ReportLab
-- **Autenticación:** Django Auth System
-- **Empaquetado:** PyInstaller
-
-## 📁 **ESTRUCTURA DEL PROYECTO**
-
-```
-Triage/
-├── README.md                 # Este archivo
-├── requirements.txt          # Dependencias Python
-├── .gitignore               # Archivos ignorados por Git
-└── triage_digital/          # Aplicación principal
-    ├── manage.py            # Gestor de Django
-    ├── app_launcher.py      # Launcher para ejecutable
-    ├── db/                  # Base de datos SQLite
-    ├── config/              # Configuración Django
-    ├── apps/                # Aplicaciones del proyecto
-    │   ├── triage/          # App principal de triage
-    │   └── patients/        # App de gestión de pacientes
-    └── logs/                # Archivos de log
-```
-
-## � **ESTADÍSTICAS DEL PROYECTO**
-
-- **Líneas de código:** ~3,000
-- **Archivos Python:** 25+
-- **Modelos de BD:** 5 principales
-- **Templates HTML:** 10+
-- **Funcionalidades:** 15+ características médicas
-
----
-
-## 📄 **LICENCIA**
-
-Este proyecto es de código abierto y está disponible para uso educativo y profesional.
-
-**Desarrollado con ❤️ para mejorar la atención hospitalaria** 🏥
-
-### **🔄 Flujo para Nuevos Colegas**
-```bash
-git clone [repo]          # Solo código fuente
-python manage.py migrate  # Crea tu BD local
-python manage.py setup_admin  # Crea usuarios
-# ¡Listo para trabajar!
-```
-
----
-
-## 🏥 **CÓMO USAR EL SISTEMA**
-
-### **1️⃣ Triage de Paciente (Proceso Completo)**
-1. **Login** con DNI médico
-2. **Click "Nuevo Triage"** → Formulario unificado
-3. **Llenar datos** del paciente (nombre, edad, etc.)
-4. **Ingresar signos vitales** (6 parámetros médicos)
-5. **¡Resultado automático!** - NEWS Score y color (Rojo/Amarillo/Verde)
-
-### **2️⃣ Dashboard en Tiempo Real**
-- **Vista general** de todos los casos
-- **Pacientes críticos** destacados en rojo
-- **Lista lateral** se actualiza cada 30 segundos
-- **Botón "Atendido"** para marcar completado
-
-### **3️⃣ Reportes Diarios**
-- **PDF automático** con estadísticas del día
-- **Descarga inmediata** desde el dashboard
-
-
-
-### **🔒 SISTEMA DE ROLES Y PERMISOS**
-
-#### **👩‍⚕️ ENFERMERO TRIAJERO**
-- ✅ Realizar triage de pacientes
-- ✅ Ver pacientes en espera con priorización automática
-- ✅ Marcar pacientes como atendidos
-- ❌ **NO puede descargar reportes PDF**
-- 🎯 **Interfaz limpia** sin opciones administrativas
-
-#### **🔧 ADMINISTRADOR**
-- ✅ Todos los permisos del enfermero +
-- ✅ **Descargar reportes PDF diarios**
-- ✅ Gestión de usuarios y sistema
-- 📊 **Botón "Reporte PDF"** visible en dashboard
-
-### **📋 REPORTE PDF PARA ADMINISTRADORES**
-El reporte incluye información detallada para supervisión:
-- 👩‍⚕️ **Qué enfermero atendió** cada paciente
-- 📊 **NEWS Score obtenido** por cada caso
-- ⏰ **Horarios exactos** de atención
-- 📈 **Estadísticas por profesional** (rendimiento diario)
-- 🏥 **Resumen general** del turno
-
-
-
-*Sistema hospitalario profesional - Octubre 2025*
+
+
+### 📊 **DASHBOARD EN TIEMPO REAL**### 📊 **DASHBOARD EN TIEMPO REAL**
+
+- Lista de pacientes ordenada por prioridad- Lista de pacientes ordenada por prioridad
+
+- Actualización automática cada 30 segundos- Actualización automática cada 30 segundos
+
+- Vista rápida del estado de cada paciente- Vista rápida del estado de cada paciente
+
+- Contadores de casos por categoría- Contadores de casos por categoría
+
+
+### 👥 **GESTIÓN DE PACIENTES**### 👥 **GESTIÓN DE PACIENTES**
+
+- Estados de atención (Esperando, En atención, Alta, etc.)- Estados de atención (Esperando, En atención, Alta, etc.)
+
+- Marcado de pacientes como atendidos- Marcado de pacientes como atendidos
+
+
+### 📋 **REPORTES MÉDICOS**### 📋 **REPORTES MÉDICOS**
+
+- **PDF diario** con estadísticas completas- **PDF diario** con estadísticas completas
+
+- Información por profesional médico- Información por profesional médico
+
+- Distribución de casos por severidad- Distribución de casos por severidad
+
+- Horarios y tiempos de atención- Horarios y tiempos de atención
+
+
+
+### 🔒 **CONTROL DE ACCESO**### 🔒 **CONTROL DE ACCESO**
+
+- Sistema de autenticación por DNI- Sistema de autenticación por DNI
+
+- **Enfermeros**: Triage y gestión básica- **Enfermeros**: Triage y gestión básica
+
+- **Administradores**: Acceso completo + reportes- **Administradores**: Acceso completo + reportes
+
+
+
+### **ONLINE** (Con Internet)### **ONLINE** (Con Internet)
+
+- Base de datos compartida en Render- Base de datos compartida en Render
+
+- Colaboración en tiempo real entre profesionales- Colaboración en tiempo real entre profesionales
+
+- Sincronización automática de datos- Sincronización automática de datos
+
+- Ideal para uso hospitalario diario- Ideal para uso hospitalario diario
+
+
+### **OFFLINE** (Sin Internet)### **OFFLINE** (Sin Internet)
+
+- Base de datos local SQLite- Base de datos local SQLite
+
+- Todos los usuarios funcionan igual- Todos los usuarios funcionan igual
+
+- Datos de demostración incluidos- Datos de demostración incluidos
+
+- Perfecto para presentaciones y capacitaciones- Perfecto para presentaciones y capacitaciones
+
+
+
+## 🔧 CARACTERÍSTICAS TÉCNICAS## 🔧 CARACTERÍSTICAS TÉCNICAS
+
+- **Framework**: Django 5.2.5- **Framework**: Django 5.2.5
+
+- **Base de datos**: PostgreSQL (online) / SQLite (offline)- **Base de datos**: PostgreSQL (online) / SQLite (offline)
+
+- **Compatibilidad**: Detección automática de conectividad- **Compatibilidad**: Detección automática de conectividad
+
+- **Interfaz**: Web responsiva, acceso desde cualquier navegador- **Interfaz**: Web responsiva, acceso desde cualquier navegador
+
+- **Tamaño**: 35MB (ejecutable completo)- **Tamaño**: 35MB (ejecutable completo)
+
+
+------
+*Sistema desarrollado para optimizar la atención médica de emergencias*
+*Sistema desarrollado para optimizar la atención médica de emergencias**Sistema desarrollado para optimizar la atención médica de emergencias*
