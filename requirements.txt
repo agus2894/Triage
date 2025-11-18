@@ -1,9 +1,10 @@
 # 🏥 TRIAGE DIGITAL - DEPENDENCIAS ESENCIALES
 # Solo lo mínimo necesario para funcionar en hospital
 
-Django==5.2.5          # Framework web principal
+Django==5.2.5          # Framework web principal ⚠️ REQUERIDO
 reportlab==4.2.5       # Generación de PDFs para reportes médicos
 psycopg2-binary>=2.9.10 # Conexión a PostgreSQL (compatible con Python 3.13)
+pyinstaller>=6.0       # Para compilar el ejecutable
 
 # Dependencias automáticas de Django (se instalan solas)
 # - asgiref
