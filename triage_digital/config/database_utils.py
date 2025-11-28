@@ -10,27 +10,31 @@ import socket
 import time
 from pathlib import Path
 
-def check_internet_connection(timeout=5):
+def check_internet_connection(timeout=3):
     """
-    Verifica si hay conexión a internet intentando conectar a Render.
+    Verifica si hay conexión a PostgreSQL en Render probando una conexión real.
     
     Returns:
-        bool: True si hay conexión, False si no hay conexión
+        bool: True si hay conexión funcional, False si no hay conexión
     """
     try:
-        # Intentar conectar al host de PostgreSQL en Render
-        host = "dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com"
-        port = 5432
+        import psycopg2
         
-        socket.setdefaulttimeout(timeout)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex((host, port))
-        sock.close()
-        
-        return result == 0
+        # Intentar una conexión real a PostgreSQL
+        conn = psycopg2.connect(
+            dbname='triage_digital',
+            user='triage_digital_user',
+            password='hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
+            host='dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
+            port='5432',
+            sslmode='require',
+            connect_timeout=timeout
+        )
+        conn.close()
+        return True
         
     except Exception as e:
-        print(f"⚠️  Sin conexión a internet: {e}")
+        print(f"⚠️  PostgreSQL no disponible: {str(e)[:80]}")
         return False
 
 def get_database_config():
@@ -48,10 +52,10 @@ def get_database_config():
         return {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'triage_db',
-                'USER': 'triage_user',
-                'PASSWORD': '3cntLJMgwEOKtlTEunIvBuzV6Fw7DY2r',
-                'HOST': 'dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com',
+                'NAME': 'triage_digital',
+                'USER': 'triage_digital_user',
+                'PASSWORD': 'hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
+                'HOST': 'dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
                 'PORT': '5432',
                 'OPTIONS': {
                     'sslmode': 'require',

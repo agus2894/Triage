@@ -81,10 +81,10 @@ except ImportError:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'triage_db',
-            'USER': 'triage_user',
-            'PASSWORD': '3cntLJMgwEOKtlTEunIvBuzV6Fw7DY2r',
-            'HOST': 'dpg-d454q9jipnbc73at7rn0-a.oregon-postgres.render.com',
+            'NAME': 'triage_digital',
+            'USER': 'triage_digital_user',
+            'PASSWORD': 'hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
+            'HOST': 'dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
             'PORT': '5432',
             'OPTIONS': {
                 'sslmode': 'require',
