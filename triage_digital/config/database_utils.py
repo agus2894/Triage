@@ -10,13 +10,46 @@ import socket
 import time
 from pathlib import Path
 
-def check_internet_connection(timeout=3):
+# Cache de estado de conexión (5 minutos)
+_connection_cache = {'last_check': 0, 'is_online': False}
+_CACHE_DURATION = 300  # 5 minutos en segundos
+
+def check_internet_connection(timeout=2, use_cache=True):
     """
     Verifica si hay conexión a PostgreSQL en Render probando una conexión real.
+    
+    Args:
+        timeout: Tiempo máximo de espera en segundos
+        use_cache: Si True, usa resultado cacheado si está disponible
     
     Returns:
         bool: True si hay conexión funcional, False si no hay conexión
     """
+    # Forzar modo offline si está configurado
+    if os.environ.get('FORCE_OFFLINE') == '1':
+        print("🔧 Modo OFFLINE forzado (FORCE_OFFLINE=1)")
+        return False
+    
+    # Usar cache si está disponible y es reciente
+    if use_cache:
+        current_time = time.time()
+        if current_time - _connection_cache['last_check'] < _CACHE_DURATION:
+            return _connection_cache['is_online']
+    
+    # Primero verificar conectividad básica de red
+    try:
+        # Test rápido de DNS y conectividad
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
+            ('dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com', 5432)
+        )
+    except (socket.timeout, socket.error, OSError) as e:
+        print(f"⚠️  Sin conexión de red: {type(e).__name__}")
+        _connection_cache['last_check'] = time.time()
+        _connection_cache['is_online'] = False
+        return False
+    
+    # Si hay conexión de red, probar PostgreSQL
     try:
         import psycopg2
         
@@ -31,10 +64,14 @@ def check_internet_connection(timeout=3):
             connect_timeout=timeout
         )
         conn.close()
+        _connection_cache['last_check'] = time.time()
+        _connection_cache['is_online'] = True
         return True
         
     except Exception as e:
         print(f"⚠️  PostgreSQL no disponible: {str(e)[:80]}")
+        _connection_cache['last_check'] = time.time()
+        _connection_cache['is_online'] = False
         return False
 
 def get_database_config():

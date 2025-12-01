@@ -65,14 +65,20 @@ def _setup_database():
                 print("⚙️  Configurando BD offline por primera vez...")
                 try:
                     call_command('setup_offline', verbosity=0, interactive=False)
-                    print("✅ BD offline configurada con datos de demostración")
-                    print("🎯 Usuario: admin / Contraseña: admin123")
+                    print("✅ BD offline configurada")
+                    print("")
+                    print("🔑 CREDENCIALES DISPONIBLES:")
+                    print("   • Admin:      usuario: admin    | contraseña: admin")
+                    print("   • Tu usuario: DNI: 38046539     | contraseña: 38046539")
+                    print("   • Demo:       DNI: 12345678     | contraseña: 12345678")
+                    print("")
                 except Exception as e:
                     print(f"⚠️  Error configurando BD offline: {e}")
                     print("📋 Ejecutando migraciones básicas...")
                     call_command('migrate', verbosity=0, interactive=False)
             else:
                 print("✅ BD offline disponible")
+                print("🔑 Credenciales: admin/admin o DNI 38046539/38046539")
         else:
             print("⚠️  Modo de BD desconocido")
             

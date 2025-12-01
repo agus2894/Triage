@@ -24,20 +24,38 @@ pip install --upgrade pyinstaller pillow
 echo "🧹 Limpiando builds anteriores..."
 rm -rf build/ dist/ __pycache__/
 
+# Crear base de datos offline con credenciales
+echo "💾 Configurando base de datos offline..."
+mkdir -p db
+
+# Forzar modo offline temporalmente para crear la BD
+export FORCE_OFFLINE=1
+
+# Ejecutar setup_offline si no existe la BD
+if [ ! -f "db/triage_offline.sqlite3" ]; then
+    echo "   📋 Creando BD offline con credenciales..."
+    python3 manage.py setup_offline --verbosity 1
+    echo "   ✅ BD offline creada con usuarios:"
+    echo "      • admin (contraseña: admin)"
+    echo "      • DNI: 38046539 (contraseña: 38046539)"
+else
+    echo "   ✅ BD offline ya existe (se mantiene)"
+fi
+
+unset FORCE_OFFLINE
+
 # Compilar aplicación
 echo "⚙️ Compilando aplicación..."
 pyinstaller TriageDigital.spec
 
 # Copiar archivos adicionales necesarios
 echo "📦 Copiando archivos adicionales..."
-if [ -d "db" ]; then
-    mkdir -p dist/db
-    if [ -f "db/triage_offline.sqlite3" ]; then
-        cp db/triage_offline.sqlite3 dist/db/
-        echo "   ✅ Base de datos offline copiada"
-    else
-        echo "   ⚠️  Base de datos offline no encontrada (se creará al primer uso)"
-    fi
+mkdir -p dist/db
+if [ -f "db/triage_offline.sqlite3" ]; then
+    cp db/triage_offline.sqlite3 dist/db/
+    echo "   ✅ Base de datos offline copiada al ejecutable"
+else
+    echo "   ⚠️  Base de datos offline no encontrada"
 fi
 
 # Verificar resultado

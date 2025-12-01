@@ -11,6 +11,19 @@
                     <i class="bi bi-hospital"></i> Triage Digital
                 </h4>
                 <p class="mb-0 text-center small">Acceso para Profesionales</p>
+                {% if is_offline %}
+                <p class="mb-0 text-center small mt-1">
+                    <span class="badge bg-warning text-dark">
+                        <i class="bi bi-wifi-off"></i> MODO OFFLINE
+                    </span>
+                </p>
+                {% else %}
+                <p class="mb-0 text-center small mt-1">
+                    <span class="badge bg-success">
+                        <i class="bi bi-wifi"></i> MODO ONLINE
+                    </span>
+                </p>
+                {% endif %}
             </div>
             <div class="card-body">
                 <form method="post" class="needs-validation" novalidate>
