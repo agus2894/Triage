@@ -1,69 +1,77 @@
-# 🏥 TRIAGE DIGITAL#
-Sistema hospitalario para clasificación médica de emergencias con funcionalidad online y offline.
+# 🏥 Triage Digital  
+Sistema web para la **clasificación y gestión de pacientes en emergencias**, diseñado para hospitales y centros de salud.  
+Funciona tanto **online** (con base de datos centralizada) como **offline** (modo local), garantizando continuidad operativa incluso sin conexión.
 
-## EJECUCIÓN##
-- **Con internet**: Colaboración en tiempo real (PostgreSQL)-
+---
 
+## ✨ Características Principales
 
-## ⚕️ FUNCIONES PRINCIPALES## 
+### 🚨 Triage Automatizado
+- Registro rápido de datos del paciente  
+- Medición de 6 signos vitales  
+- Cálculo automático de **NEWS Score (0–20 pts)**  
+- Clasificación inmediata:
+  - 🔴 **Rojo – Emergencia (≥7)**
+  - 🟡 **Amarillo – Urgente (3–6)**
+  - 🟢 **Verde – No urgente (0–2)**
 
-### 🚨 **TRIAGE DE PACIENTES**###
-- Registro de datos básicos del paciente-
-- Medición de 6 signos vitales críticos-
+---
 
-- **Cálculo automático NEWS Score** (0-20 puntos)- 
-- **Clasificación por colores**:
-  - 🔴 **ROJO**: Emergencia (NEWS ≥ 7)  
-  - 🟡 **AMARILLO**: Urgente (NEWS 3-6) 
-  - 🟢 **VERDE**: No urgente (NEWS 0-2) 
+### 📊 Dashboard en Tiempo Real
+- Listado ordenado por prioridad clínica  
+- Actualización automática cada 30 segundos  
+- Indicadores visuales de severidad  
+- Contadores por categoría  
 
-### 📊 **DASHBOARD EN TIEMPO REAL**### 
+---
 
-- Lista de pacientes ordenada por prioridad-
-- Actualización automática cada 30 segundos-
-- Vista rápida del estado de cada paciente-
-- Contadores de casos por categoría-
+### 👥 Gestión de Pacientes
+- Estados: *Esperando*, *En atención*, *Alta*  
+- Historial por profesional  
+- Control de flujo de pacientes  
 
-### 👥 **GESTIÓN DE PACIENTES**###
+---
 
-- Estados de atención (Esperando, En atención, Alta, etc.)-
-- Marcado de pacientes como atendidos- Marcado de pacientes como atendidos
+### 📋 Reportes Automáticos
+- Generación de PDF diario  
+- Estadísticas por severidad y profesional  
+- Tiempos y horarios de atención  
 
+---
 
-### 📋 **REPORTES MÉDICOS**###
+### 🔐 Control de Acceso
+- Autenticación por DNI  
+- Roles:
+  - **Enfermería:** triage y gestión
+  - **Administración:** control completo + reportes  
 
-- **PDF diario** con estadísticas completas-
+---
 
-- Información por profesional médico.
-- Distribución de casos por severidad.
-- Horarios y tiempos de atención.
+## 🌐 Modo Online
+- Base de datos PostgreSQL en Render  
+- Trabajo colaborativo entre múltiples profesionales  
+- Conexión y sincronización en tiempo real  
 
+## 📴 Modo Offline
+- Base de datos local SQLite  
+- Funcionalidad completa sin internet  
+- Carga automática de datos locales  
 
-### 🔒 **CONTROL DE ACCESO**###
+---
 
-- Sistema de autenticación por DNI-
+## 🛠️ Tecnologías Utilizadas
+- **Backend:** Django 5.2.5  
+- **Base de datos:** PostgreSQL / SQLite  
+- **Frontend:** HTML, CSS, JS (responsive)  
+- **Reportes:** PDF automático  
+- **Sincronización:** detección inteligente de conectividad  
 
-- **Enfermeros**: Triage y gestión básica-
-- **Administradores**: Acceso completo + reportes-
+---
 
+## 🎯 Objetivo del Proyecto
+Optimizar la atención en emergencias mediante un sistema rápido, intuitivo y confiable, diseñado para entornos hospitalarios de alta demanda.
 
-### **ONLINE** (Con Internet)###
-- Base de datos compartida en Render-
-- Colaboración en tiempo real entre profesionales-
-- Sincronización automática de datos-
-- Ideal para uso hospitalario diario-
+---
 
-### **OFFLINE** (Sin Internet)### 
-- Base de datos local SQLite-
-- Todos los usuarios funcionan igual-
-- Datos de demostración incluidos-
-- Perfecto para presentaciones y capacitaciones-
-
-
-## 🔧 CARACTERÍSTICAS TÉCNICAS##
-- **Framework**: Django 5.2.5-
-- **Base de datos**: PostgreSQL (online) / SQLite (offline)-
-- **Compatibilidad**: Detección automática de conectividad-
-- **Interfaz**: Web responsiva, acceso desde cualquier navegador-
-
-*Sistema desarrollado para optimizar la atención médica de emergencias**Sistema desarrollado para optimizar la atención médica de emergencias*
+## 🧑‍💻 Autor
+**Gonzalo Agustín Lamas** – Técnico Universitario en Programación & Enfermero Profesional
