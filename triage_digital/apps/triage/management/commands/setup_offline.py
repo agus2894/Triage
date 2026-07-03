@@ -71,7 +71,7 @@ class Command(BaseCommand):
                         Profesional.objects.create(
                             user=prof_user,
                             dni='38046539',
-                            tipo='ENFERMERO',
+                            tipo='enfermero',
                             matricula='ENF-38046539',
                             activo=True
                         )
@@ -96,7 +96,7 @@ class Command(BaseCommand):
                         Profesional.objects.create(
                             user=otro_user,
                             dni='12345678',
-                            tipo='MEDICO',
+                            tipo='medico',
                             matricula='MED-12345678',
                             activo=True
                         )
