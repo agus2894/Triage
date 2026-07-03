@@ -6,6 +6,7 @@ Utilidades para manejo híbrido de bases de datos (Online/Offline)
 """
 
 import os
+import sys
 import socket
 import time
 from pathlib import Path
@@ -104,11 +105,30 @@ def get_database_config():
     else:
         print("💾 Modo OFFLINE - Usando SQLite local")
         
+        # Detectar si estamos ejecutando desde PyInstaller
+        if getattr(sys, 'frozen', False):
+            # Ejecutable de PyInstaller: usar directorio del ejecutable
+            base_path = Path(sys.executable).parent
+            print(f"🔧 Ejecutable PyInstaller detectado")
+        else:
+            # Desarrollo: usar directorio del proyecto
+            base_path = Path(__file__).parent.parent
+            print(f"🔧 Modo desarrollo detectado")
+        
         # Crear directorio para BD local si no existe
-        db_dir = Path(__file__).parent.parent / 'db'
+        db_dir = base_path / 'db'
         db_dir.mkdir(exist_ok=True)
         
         db_path = db_dir / 'triage_offline.sqlite3'
+        
+        # LOGGING: mostrar ruta exacta de BD
+        print(f"🗄️  base_path = {base_path}")
+        print(f"🗄️  db_dir = {db_dir}")
+        print(f"🗄️  db_path = {db_path}")
+        print(f"🗄️  db_path.exists() = {db_path.exists()}")
+        if db_path.exists():
+            import os
+            print(f"🗄️  Tamaño BD: {os.path.getsize(db_path)} bytes")
         
         return {
             'default': {
