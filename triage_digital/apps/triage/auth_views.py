@@ -56,10 +56,23 @@ def login_profesional(request):
         try:
             from .models import Profesional
             logger.info(f"Buscando profesional con DNI: {dni}")
+            logger.info(f"Consultando BD: Profesional.objects.filter(dni='{dni}')")
             profesional = Profesional.objects.select_related('user').get(dni=dni, activo=True)
             user = profesional.user
-            logger.info(f"Profesional encontrado: {user.username}")
-        except Profesional.DoesNotExist:
+            logger.info(f"✅ Profesional encontrado: {user.username}, ID: {profesional.id}, Activo: {profesional.activo}")
+        except Profesional.DoesNotExist as e:
+            logger.error(f"❌ Profesional.DoesNotExist para DNI {dni}")
+            logger.error(f"   Detalle: {str(e)}")
+            # Intentar buscar sin filtro activo para debugging
+            try:
+                prof_any = Profesional.objects.filter(dni=dni).first()
+                if prof_any:
+                    logger.error(f"   ⚠️ Profesional existe pero activo={prof_any.activo}")
+                else:
+                    logger.error(f"   ⚠️ No existe profesional con DNI {dni} en la BD")
+            except Exception as debug_e:
+                logger.error(f"   Error en debug: {debug_e}")
+            
             if is_offline:
                 # En modo offline, dar pista sin mostrar credenciales
                 messages.error(request, f'DNI {dni} no encontrado en base de datos offline.')
@@ -69,8 +82,10 @@ def login_profesional(request):
         except Exception as e:
             # Log del error para debugging
             import logging
+            import traceback
             logger = logging.getLogger(__name__)
-            logger.error(f"Error buscando profesional {dni}: {e}")
+            logger.error(f"❌ Exception al buscar profesional {dni}: {type(e).__name__}: {e}")
+            logger.error(f"   Traceback: {traceback.format_exc()}")
             messages.error(request, 'Error al buscar profesional. Verifique la conexión a la base de datos.')
             return render(request, 'registration/login.html', {'is_offline': is_offline})
         
