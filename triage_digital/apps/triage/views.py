@@ -249,7 +249,8 @@ def dashboard_principal(request):
             'signos_vitales__profesional__user'
         ).only(
             'id', 'nombre', 'apellido', 'dni', 'edad', 'motivo_consulta',
-            'fecha_ingreso', 'estado_atencion', 'activo'
+            'fecha_ingreso', 'estado_atencion', 'activo', 'profesional_atencion',
+            'profesional_atencion__user__first_name', 'profesional_atencion__user__last_name'
         ).order_by('-fecha_ingreso')[:5])
         
         cached_data = {
