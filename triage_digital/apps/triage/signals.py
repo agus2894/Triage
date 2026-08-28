@@ -67,6 +67,14 @@ def auto_optimize_background():
 def optimize_after_triage(sender, instance, created, **kwargs):
     """Optimización automática después de crear triage."""
     if created:
+        # Invalidar caches relacionados de inmediato
+        cache_keys = [
+            'dashboard_stats',
+            'patients_waiting',
+            'kanban_data',
+        ]
+        cache.delete_many(cache_keys)
+        
         count = increment_operations()
         
         # Auto-optimización inteligente cada 100 triages
@@ -81,9 +89,11 @@ def optimize_after_triage(sender, instance, created, **kwargs):
 def cache_invalidation_patient(sender, instance, **kwargs):
     """Invalidar cache automáticamente cuando cambia un paciente."""
     # Invalidar caches específicos para que el dashboard se actualice
+    # Usar delete_many para optimizar múltiples invalidaciones
     cache_keys = [
         'dashboard_stats',
         'patients_waiting',
+        'kanban_data',
         f'patient_{instance.id}',
     ]
     cache.delete_many(cache_keys)
@@ -94,12 +104,14 @@ def cleanup_after_patient_delete(sender, instance, **kwargs):
     """Limpieza automática después de eliminar paciente."""
     increment_operations()
     
-    # Invalidar caches relacionados
-    cache.delete_many([
+    # Invalidar caches relacionados usando delete_many
+    cache_keys = [
         'dashboard_stats',
         'patients_waiting',
+        'kanban_data',
         f'patient_{instance.id}',
-    ])
+    ]
+    cache.delete_many(cache_keys)
 
 
 # Signal para limpieza automática de datos antiguos

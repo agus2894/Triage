@@ -19,9 +19,95 @@ def _lazy_import_pdf():
     return canvas, letter
 
 
+def _construir_datos_paciente(paciente, incluir_signos=True, incluir_profesional=True):
+    """
+    Función auxiliar optimizada para construir diccionario de datos del paciente.
+    Consolida lógica duplicada en api_lista_pacientes y api_kanban_pacientes.
+    
+    Args:
+        paciente: Instancia de Paciente (debe tener signos_vitales prefetched)
+        incluir_signos: Si incluir resumen de signos vitales
+        incluir_profesional: Si incluir información del profesional de atención
+    
+    Returns:
+        dict: Datos formateados del paciente
+    """
+    # Datos básicos
+    datos = {
+        'id': paciente.id,
+        'nombre_completo': paciente.nombre_completo,
+        'dni': paciente.dni or 'Sin DNI',
+        'edad': paciente.edad,
+        'motivo_consulta': paciente.motivo_consulta or 'Sin motivo especificado',
+        'hora_ingreso': paciente.fecha_ingreso.strftime('%H:%M'),
+        'tiempo_espera': paciente.tiempo_espera,
+        'tiempo_espera_minutos': paciente.tiempo_espera_minutos,
+    }
+    
+    # Obtener último triage si existe
+    nivel_urgencia = 'SIN TRIAGE'
+    news_score = None
+    prioridad_critica = 0
+    signos_resumen = None
+    prof_triage = 'N/A'
+    
+    # Usar signos_vitales pre-cargados para evitar queries adicionales
+    signos = list(paciente.signos_vitales.all()) if hasattr(paciente, '_prefetched_objects_cache') else []
+    
+    if signos:
+        ultimo_signo = signos[0]  # Ya están ordenados por fecha_hora desc
+        nivel_urgencia = ultimo_signo.nivel_urgencia or 'SIN TRIAGE'
+        news_score = ultimo_signo.news_score
+        
+        if nivel_urgencia == 'ROJO':
+            prioridad_critica = ultimo_signo.calcular_prioridad_critica()
+        
+        if incluir_signos:
+            signos_resumen = {
+                'fr': ultimo_signo.frecuencia_respiratoria,
+                'sat': ultimo_signo.saturacion_oxigeno,
+                'ta': ultimo_signo.tension_sistolica,
+                'fc': ultimo_signo.frecuencia_cardiaca,
+                'conciencia': ultimo_signo.get_nivel_conciencia_display(),
+                'temp': float(ultimo_signo.temperatura) if ultimo_signo.temperatura else None,
+            }
+        
+        if incluir_profesional and ultimo_signo.profesional and ultimo_signo.profesional.user:
+            prof_triage = ultimo_signo.profesional.user.get_full_name() or ultimo_signo.profesional.user.username
+    
+    # Agregar datos de triage
+    datos.update({
+        'nivel_urgencia': nivel_urgencia,
+        'news_score': news_score,
+        'prioridad_critica': prioridad_critica,
+    })
+    
+    if incluir_signos and signos_resumen:
+        datos['signos_resumen'] = signos_resumen
+    
+    if incluir_profesional:
+        datos['profesional_triage'] = prof_triage
+    
+    # Si está en atención, agregar datos del profesional que atiende
+    if paciente.estado_atencion == 'EN_ATENCION':
+        datos['hora_atencion'] = paciente.fecha_atencion.strftime('%H:%M') if paciente.fecha_atencion else ''
+        
+        prof_atencion = 'En atención'
+        if incluir_profesional and paciente.profesional_atencion and paciente.profesional_atencion.user:
+            prof_atencion = paciente.profesional_atencion.user.get_full_name() or paciente.profesional_atencion.user.username
+        datos['profesional_atencion'] = prof_atencion
+    
+    return datos
+
+
 def _crear_signos_vitales(request, paciente, profesional):
+    """
+    Helper optimizado para crear signos vitales desde request POST.
+    Valida y convierte valores de forma segura.
+    """
     def safe_int(value, default=0):
-        if value in [None, '', 'undefined', 'null']:
+        """Convierte valor a int de forma segura."""
+        if value in (None, '', 'undefined', 'null'):
             return default
         try:
             return int(value)
@@ -29,7 +115,8 @@ def _crear_signos_vitales(request, paciente, profesional):
             return default
     
     def safe_float(value, default=0.0):
-        if value in [None, '', 'undefined', 'null']:
+        """Convierte valor a float de forma segura."""
+        if value in (None, '', 'undefined', 'null'):
             return default
         try:
             return float(value)
@@ -37,27 +124,26 @@ def _crear_signos_vitales(request, paciente, profesional):
             return default
     
     def safe_str(value, default=''):
-        if value in [None, 'undefined', 'null']:
+        """Convierte valor a string de forma segura."""
+        if value in (None, 'undefined', 'null'):
             return default
         return str(value)
     
-    # Validar y convertir valores de forma segura
-    frecuencia_respiratoria = safe_int(request.POST.get('frecuencia_respiratoria'))
-    saturacion_oxigeno = safe_int(request.POST.get('saturacion_oxigeno'))
-    tension_sistolica = safe_int(request.POST.get('tension_sistolica'))
-    frecuencia_cardiaca = safe_int(request.POST.get('frecuencia_cardiaca'))
-    nivel_conciencia = safe_str(request.POST.get('nivel_conciencia'))
-    temperatura = safe_float(request.POST.get('temperatura'))
+    # Extraer y validar valores del POST en una sola pasada
+    post_data = {
+        'frecuencia_respiratoria': safe_int(request.POST.get('frecuencia_respiratoria')),
+        'saturacion_oxigeno': safe_int(request.POST.get('saturacion_oxigeno')),
+        'tension_sistolica': safe_int(request.POST.get('tension_sistolica')),
+        'frecuencia_cardiaca': safe_int(request.POST.get('frecuencia_cardiaca')),
+        'nivel_conciencia': safe_str(request.POST.get('nivel_conciencia')),
+        'temperatura': safe_float(request.POST.get('temperatura')),
+    }
     
+    # Crear signos vitales con datos validados
     signos = SignosVitales.objects.create(
         paciente=paciente,
         profesional=profesional,
-        frecuencia_respiratoria=frecuencia_respiratoria,
-        saturacion_oxigeno=saturacion_oxigeno,
-        tension_sistolica=tension_sistolica,
-        frecuencia_cardiaca=frecuencia_cardiaca,
-        nivel_conciencia=nivel_conciencia,
-        temperatura=temperatura
+        **post_data
     )
     
     return signos
@@ -126,6 +212,7 @@ def dashboard_principal(request):
         hace_24h = timezone.now() - timedelta(hours=24)
         
         # 🔥 CONSULTAS OPTIMIZADAS - Usando select_related y prefetch_related
+        # Una sola consulta con aggregate para estadísticas
         estadisticas = SignosVitales.objects.filter(
             fecha_hora__gte=hace_24h,
             nivel_urgencia__isnull=False,
@@ -138,7 +225,7 @@ def dashboard_principal(request):
             verdes=Count('id', filter=Q(nivel_urgencia='VERDE'))
         )
         
-        # Casos críticos - OPTIMIZADO con select_related
+        # Casos críticos - OPTIMIZADO con select_related - Limitar a 10
         casos_criticos = list(SignosVitales.objects.filter(
             nivel_urgencia__in=['ROJO', 'AMARILLO'],
             paciente__activo=True,
@@ -146,10 +233,24 @@ def dashboard_principal(request):
         ).select_related(
             'paciente',
             'profesional__user'
+        ).only(
+            'id', 'fecha_hora', 'nivel_urgencia', 'news_score',
+            'paciente__id', 'paciente__nombre', 'paciente__apellido', 'paciente__dni',
+            'profesional__user__first_name', 'profesional__user__last_name'
         ).order_by('-fecha_hora')[:10])
         
-        # Pacientes pendientes (OPTIMIZADO con manager personalizado)
-        pacientes_recientes = list(Paciente.objects.activos_en_espera()[:5])
+        # Pacientes pendientes (OPTIMIZADO con manager personalizado) - Limitar a 5
+        pacientes_recientes = list(Paciente.objects.filter(
+            activo=True,
+            estado_atencion='ESPERANDO'
+        ).select_related(
+            'profesional_atencion__user'
+        ).prefetch_related(
+            'signos_vitales__profesional__user'
+        ).only(
+            'id', 'nombre', 'apellido', 'dni', 'edad', 'motivo_consulta',
+            'fecha_ingreso', 'estado_atencion', 'activo'
+        ).order_by('-fecha_ingreso')[:5])
         
         cached_data = {
             'estadisticas': estadisticas,
@@ -169,44 +270,67 @@ def dashboard_principal(request):
 
 @login_required
 @require_http_methods(["POST"])
+def iniciar_atencion(request, paciente_id):
+    """Inicia la atención médica de un paciente en espera (lo pasa a EN_ATENCION)."""
+    try:
+        paciente = get_object_or_404(Paciente, id=paciente_id, activo=True)
+        profesional = _obtener_profesional(request)
+        
+        paciente.marcar_atendido('EN_ATENCION', profesional)
+        
+        # 🚀 Limpiar caches
+        cache.delete('dashboard_stats')
+        cache.delete('patients_waiting')
+        cache.delete('kanban_data')
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': f'👩‍⚕️ {paciente.nombre_completo} en atención médica',
+            'estado': paciente.get_estado_atencion_display(),
+            'profesional': profesional.user.get_full_name() if (profesional and profesional.user) else 'Asignado'
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
 def marcar_atendido(request, paciente_id):
     """Marca un paciente con destino específico (AJAX) y actualiza caches."""
     try:
         paciente = get_object_or_404(Paciente, id=paciente_id, activo=True)
-        
-        # Obtener profesional actual
         profesional = _obtener_profesional(request)
         
-        # Obtener destino del JSON data o POST data
         import json
-        destino = 'ALTA'  # Default
+        destino = 'ALTA'
         
         if request.content_type == 'application/json':
-            # Datos enviados como JSON
             try:
                 data = json.loads(request.body)
                 destino = data.get('destino', 'ALTA')
             except (json.JSONDecodeError, KeyError):
                 destino = 'ALTA'
         else:
-            # Datos enviados como formulario
             destino = request.POST.get('destino', 'ALTA')
             
         destinos_validos = {
+            'ESPERANDO': '⏳ En Espera',
+            'EN_ATENCION': '👩‍⚕️ En Atención',
             'PASE_A_SALA': '🏥 Pase a Sala',
             'ALTA': '✅ Alta',
-            'PASE_A_UTI': '🚨 Pase a UTI'
+            'PASE_A_UTI': '🚨 Pase a UTI',
+            'DERIVADO': '🚑 Derivado'
         }
         
         if destino not in destinos_validos:
-            destino = 'ALTA'  # Default seguro
+            destino = 'ALTA'
         
-        # Marcar como atendido con el profesional que lo atiende
         paciente.marcar_atendido(destino, profesional)
         
         # 🚀 LIMPIAR CACHES para actualización inmediata
         cache.delete('dashboard_stats')
         cache.delete('patients_waiting')
+        cache.delete('kanban_data')
         
         return JsonResponse({
             'success': True,
@@ -216,6 +340,133 @@ def marcar_atendido(request, paciente_id):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def kanban_view(request):
+    """Vista de pantalla completa para el Tablero Kanban de Guardia."""
+    profesional = _obtener_profesional(request)
+    hace_24h = timezone.now() - timedelta(hours=24)
+    
+    estadisticas = SignosVitales.objects.filter(
+        fecha_hora__gte=hace_24h,
+        nivel_urgencia__isnull=False,
+        paciente__activo=True,
+        paciente__estado_atencion__in=['ESPERANDO', 'EN_ATENCION']
+    ).aggregate(
+        total=Count('id'),
+        rojos=Count('id', filter=Q(nivel_urgencia='ROJO')),
+        amarillos=Count('id', filter=Q(nivel_urgencia='AMARILLO')),
+        verdes=Count('id', filter=Q(nivel_urgencia='VERDE'))
+    )
+    
+    return render(request, 'triage/kanban.html', {
+        'profesional': profesional,
+        'estadisticas': estadisticas,
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def api_kanban_pacientes(request):
+    """
+    API para alimentar el Tablero Kanban de Guardia en tiempo real.
+    Devuelve listas separadas: esperando, en_atencion, atendidos_hoy.
+    """
+    cache_key = 'kanban_data'
+    cached_data = cache.get(cache_key)
+    
+    if cached_data is not None and not request.GET.get('nocache'):
+        return JsonResponse(cached_data, safe=False)
+        
+    try:
+        hoy = timezone.now().date()
+        
+        # 1. EN ESPERA
+        pacientes_esperando = Paciente.objects.filter(
+            activo=True,
+            estado_atencion='ESPERANDO'
+        ).prefetch_related('signos_vitales__profesional__user').order_by('fecha_ingreso')
+        
+        lista_esperando = []
+        lista_rojos = []
+        
+        for p in pacientes_esperando:
+            datos = _construir_datos_paciente(p, incluir_signos=True, incluir_profesional=True)
+            
+            if datos['nivel_urgencia'] == 'ROJO':
+                lista_rojos.append(datos)
+            else:
+                lista_esperando.append(datos)
+                
+        # Ordenar rojos por prioridad crítica
+        lista_rojos.sort(key=lambda x: x['prioridad_critica'], reverse=True)
+        
+        # Ordenar resto: amarillos primero, luego verdes, luego sin triage
+        def sort_priority(item):
+            urg = item['nivel_urgencia']
+            if urg == 'AMARILLO': return 1
+            if urg == 'VERDE': return 2
+            return 3
+        lista_esperando.sort(key=sort_priority)
+        esperando_final = lista_rojos + lista_esperando
+        
+        # 2. EN ATENCIÓN
+        pacientes_atencion = Paciente.objects.filter(
+            activo=True,
+            estado_atencion='EN_ATENCION'
+        ).prefetch_related('signos_vitales').select_related('profesional_atencion__user').order_by('-fecha_atencion')
+        
+        lista_atencion = [
+            _construir_datos_paciente(p, incluir_signos=False, incluir_profesional=True)
+            for p in pacientes_atencion
+        ]
+            
+        # 3. ATENDIDOS / EGRESADOS HOY
+        pacientes_egreso = Paciente.objects.filter(
+            fecha_atencion__date=hoy,
+            estado_atencion__in=['PASE_A_SALA', 'ALTA', 'PASE_A_UTI', 'DERIVADO']
+        ).prefetch_related('signos_vitales').select_related('profesional_atencion__user').order_by('-fecha_atencion')[:40]
+        
+        destinos_badge = {
+            'PASE_A_SALA': {'texto': '🏥 Pase a Sala', 'color': 'primary'},
+            'ALTA': {'texto': '✅ Alta Médica', 'color': 'success'},
+            'PASE_A_UTI': {'texto': '🚨 Pase a UTI', 'color': 'danger'},
+            'DERIVADO': {'texto': '🚑 Derivado', 'color': 'dark'},
+        }
+        
+        lista_egresos = []
+        for p in pacientes_egreso:
+            datos = _construir_datos_paciente(p, incluir_signos=False, incluir_profesional=True)
+            
+            badge_info = destinos_badge.get(p.estado_atencion, {'texto': p.get_estado_atencion_display(), 'color': 'secondary'})
+            datos.update({
+                'estado_atencion': p.estado_atencion,
+                'destino_texto': badge_info['texto'],
+                'destino_color': badge_info['color'],
+                'hora_atencion': p.fecha_atencion.strftime('%H:%M') if p.fecha_atencion else '',
+            })
+            
+            lista_egresos.append(datos)
+            
+        data = {
+            'esperando': esperando_final,
+            'en_atencion': lista_atencion,
+            'atendidos_hoy': lista_egresos,
+            'total_esperando': len(esperando_final),
+            'total_en_atencion': len(lista_atencion),
+            'total_atendidos': len(lista_egresos),
+            'rojos_en_espera': len(lista_rojos),
+            'timestamp': timezone.now().isoformat(),
+        }
+        
+        # Cache por 15 segundos
+        cache.set(cache_key, data, timeout=15)
+        return JsonResponse(data)
+        
+    except Exception as e:
+        import traceback
+        return JsonResponse({'error': str(e), 'traceback': traceback.format_exc()}, status=500)
 
 
 @login_required
@@ -239,33 +490,15 @@ def api_lista_pacientes(request):
             
             for paciente in pacientes:
                 try:
-                    # Obtener último triage si existe - usando prefetch_related
-                    nivel_urgencia = 'SIN TRIAGE'
-                    prioridad_critica = 0
+                    # Usar función helper optimizada
+                    paciente_data = _construir_datos_paciente(
+                        paciente, 
+                        incluir_signos=False,
+                        incluir_profesional=False
+                    )
                     
-                    # Usar los signos vitales pre-cargados
-                    signos_vitales = list(paciente.signos_vitales.all())
-                    if signos_vitales:
-                        ultimo_signo = signos_vitales[0]  # Ya ordenados por fecha_hora desc
-                        if ultimo_signo.nivel_urgencia:
-                            nivel_urgencia = ultimo_signo.nivel_urgencia
-                            # 🚨 Calcular prioridad crítica para códigos rojos
-                            if nivel_urgencia == 'ROJO':
-                                prioridad_critica = ultimo_signo.calcular_prioridad_critica()
-                    
-                    paciente_data = {
-                        'id': paciente.id,
-                        'nombre_completo': paciente.nombre_completo,
-                        'dni': paciente.dni or 'Sin DNI',
-                        'edad': paciente.edad,
-                        'tiempo_espera': paciente.tiempo_espera,
-                        'tiempo_espera_minutos': paciente.tiempo_espera_minutos,
-                        'nivel_urgencia': nivel_urgencia,
-                        'motivo_consulta': paciente.motivo_consulta or '',
-                        'prioridad_critica': prioridad_critica  # 🚨 Nueva prioridad
-                    }
-                    
-                    if nivel_urgencia == 'ROJO':
+                    # Separar rojos para ordenar por prioridad
+                    if paciente_data['nivel_urgencia'] == 'ROJO':
                         pacientes_rojos_con_prioridad.append(paciente_data)
                     else:
                         data.append(paciente_data)
@@ -314,19 +547,31 @@ def reporte_diario_pdf(request):
     # Datos del día actual
     hoy = timezone.now().date()
     
-    # 📊 CONSULTA OPTIMIZADA: SignosVitales del día
+    # 📊 CONSULTA OPTIMIZADA: SignosVitales del día con only() para campos necesarios
     signos_del_dia = SignosVitales.objects.filter(
         fecha_hora__date=hoy
     ).select_related(
         'paciente', 'profesional__user'
+    ).only(
+        'id', 'fecha_hora', 'nivel_urgencia', 'news_score',
+        'paciente__nombre', 'paciente__apellido', 'paciente__dni',
+        'profesional__user__first_name', 'profesional__user__last_name',
+        'profesional__tipo'
     ).order_by('-fecha_hora')
     
-    # 🏥 CONSULTA OPTIMIZADA: Pacientes atendidos del día con destinos y profesional
+    # 🏥 CONSULTA OPTIMIZADA: Pacientes atendidos del día
     from apps.patients.models import Paciente
     pacientes_atendidos = Paciente.objects.filter(
         fecha_atencion__date=hoy,
         estado_atencion__in=['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
-    ).select_related('profesional_atencion__user').order_by('-fecha_atencion')
+    ).select_related(
+        'profesional_atencion__user'
+    ).only(
+        'id', 'nombre', 'apellido', 'dni', 'edad',
+        'fecha_ingreso', 'fecha_atencion', 'estado_atencion',
+        'profesional_atencion__user__first_name', 
+        'profesional_atencion__user__last_name'
+    ).order_by('-fecha_atencion')
     
     # 📈 Estadísticas generales
     total_evaluaciones = signos_del_dia.count()

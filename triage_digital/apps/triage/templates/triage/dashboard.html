@@ -94,25 +94,49 @@
     </div>
     {% endif %}
 
-<div class="row">
-    <div class="col-12">
-        <div class="card card-mobile">
-            <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
-                <h5 class="mb-0">
-                    <i class="bi bi-clipboard2-pulse"></i> 
-                    <span class="d-mobile-none">🩺 Triage Completo </span>
-                    <span class="d-lg-none">🩺 Nuevo Triage</span>
-                </h5>
-                <span class="badge bg-light text-primary">Sistema NEWS</span>
-            </div>
-            <div class="card-body p-2 p-md-3">
-                
-                <!-- Formulario unificado -->
-                <form method="post" class="needs-validation" novalidate id="triageCompletoFormDashboard">
-                    {% csrf_token %}
-                    
-                    <!-- SECCIÓN COMPACTA: DATOS DEL PACIENTE -->
-                    <div class="card mb-3 border-info">
+    <!-- Pestañas de Navegación del Dashboard -->
+    <ul class="nav nav-pills mb-3 gap-1 bg-light p-1 rounded border" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold btn-sm" id="tab-triage-btn" data-bs-toggle="pill" data-bs-target="#tab-triage-content" type="button" role="tab">
+                <i class="bi bi-clipboard2-pulse"></i> 🩺 Nuevo Triage
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold btn-sm" id="tab-kanban-btn" data-bs-toggle="pill" data-bs-target="#tab-kanban-content" type="button" role="tab" onclick="cargarKanbanDashboard()">
+                <i class="bi bi-kanban"></i> 📋 Tablero Kanban de Guardia
+            </button>
+        </li>
+        <li class="nav-item ms-auto d-none d-md-block">
+            <a href="{% url 'triage:kanban' %}" class="btn btn-sm btn-outline-secondary" title="Abrir Tablero en Pantalla Completa">
+                <i class="bi bi-arrows-fullscreen"></i> Modo Pantalla Completa
+            </a>
+        </li>
+    </ul>
+
+    <!-- Contenido de las Pestañas -->
+    <div class="tab-content" id="dashboardTabsContent">
+        
+        <!-- PESTAÑA 1: FORMULARIO NUEVO TRIAGE -->
+        <div class="tab-pane fade show active" id="tab-triage-content" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-mobile">
+                        <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-clipboard2-pulse"></i> 
+                                <span class="d-mobile-none">🩺 Triage Completo </span>
+                                <span class="d-lg-none">🩺 Nuevo Triage</span>
+                            </h5>
+                            <span class="badge bg-light text-primary">Sistema NEWS</span>
+                        </div>
+                        <div class="card-body p-2 p-md-3">
+                            
+                            <!-- Formulario unificado -->
+                            <form method="post" class="needs-validation" novalidate id="triageCompletoFormDashboard">
+                                {% csrf_token %}
+                                
+                                <!-- SECCIÓN COMPACTA: DATOS DEL PACIENTE -->
+                                <div class="card mb-3 border-info">
                         <div class="card-header bg-info text-white py-2">
                             <h6 class="mb-0">
                                 <i class="bi bi-person-badge"></i> Datos del Paciente
@@ -457,14 +481,226 @@
         </div>
     </div>
 </div>
+</div>
+<!-- FIN PESTAÑA 1 -->
+
+<!-- PESTAÑA 2: TABLERO KANBAN EMBEBIDO -->
+<div class="tab-pane fade" id="tab-kanban-content" role="tabpanel">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0 text-primary"><i class="bi bi-kanban"></i> Tablero de Pacientes de Guardia</h5>
+        <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="cargarKanbanDashboard()">
+                <i class="bi bi-arrow-clockwise" id="dash-kanban-refresh-icon"></i> Actualizar
+            </button>
+            <a href="{% url 'triage:kanban' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-arrows-fullscreen"></i> Ver Completo
+            </a>
+        </div>
+    </div>
+
+    <!-- Columnas Kanban -->
+    <div class="row g-2">
+        <!-- Columna 1: En Espera -->
+        <div class="col-12 col-lg-4">
+            <div class="card h-100 border-0 bg-light shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold small"><i class="bi bi-hourglass-split"></i> 1. En Espera</span>
+                    <span class="badge bg-white text-primary" id="dash-k-count-esperando">0</span>
+                </div>
+                <div class="card-body p-2" id="dash-col-esperando" style="max-height: 65vh; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 small">Cargando...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna 2: En Atención -->
+        <div class="col-12 col-lg-4">
+            <div class="card h-100 border-0 bg-light shadow-sm">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold small"><i class="bi bi-heart-pulse"></i> 2. En Box de Atención</span>
+                    <span class="badge bg-dark text-warning" id="dash-k-count-atencion">0</span>
+                </div>
+                <div class="card-body p-2" id="dash-col-atencion" style="max-height: 65vh; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 small">Cargando...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna 3: Egresos Hoy -->
+        <div class="col-12 col-lg-4">
+            <div class="card h-100 border-0 bg-light shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-2">
+                    <span class="fw-bold small"><i class="bi bi-check2-circle"></i> 3. Egresos / Destinos Hoy</span>
+                    <span class="badge bg-white text-success" id="dash-k-count-egresos">0</span>
+                </div>
+                <div class="card-body p-2" id="dash-col-egresos" style="max-height: 65vh; overflow-y: auto;">
+                    <div class="text-center text-muted py-3 small">Cargando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- FIN PESTAÑA 2 -->
+
+</div>
+<!-- FIN CONTENEDOR PESTAÑAS -->
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Auto-refresh crítico cada 2 minutos para emergencias
+// Auto-refresh inteligente
 setInterval(() => {
-    window.location.reload();
-}, 120000);
+    // Si la pestaña de triage está activa y se está cargando un formulario, no refrescar página completa
+    const triageTabActive = document.getElementById('tab-triage-btn')?.classList.contains('active');
+    const formDni = document.getElementById('dni_dash')?.value;
+    if (triageTabActive && formDni) {
+        // Usuario escribiendo, no refrescar
+        return;
+    }
+    if (typeof cargarPacientes === 'function') cargarPacientes();
+    if (typeof actualizarEstadisticasDashboard === 'function') actualizarEstadisticasDashboard();
+}, 60000);
+
+// Función para cargar el Tablero Kanban en el Dashboard
+function cargarKanbanDashboard() {
+    const icon = document.getElementById('dash-kanban-refresh-icon');
+    if (icon) icon.classList.add('spin-anim');
+
+    fetch('/triage/api/kanban-pacientes/?nocache=1')
+        .then(res => res.json())
+        .then(data => {
+            if (icon) icon.classList.remove('spin-anim');
+            renderizarKanbanDashboard(data);
+            if (data.rojos_en_espera > 0 && window.soundAlertManager) {
+                window.soundAlertManager.notificarCasoRojo(data.rojos_en_espera);
+            }
+        })
+        .catch(err => {
+            if (icon) icon.classList.remove('spin-anim');
+            console.error('Error cargando Kanban en Dashboard:', err);
+        });
+}
+
+function renderizarKanbanDashboard(data) {
+    document.getElementById('dash-k-count-esperando').textContent = data.total_esperando;
+    document.getElementById('dash-k-count-atencion').textContent = data.total_en_atencion;
+    document.getElementById('dash-k-count-egresos').textContent = data.total_atendidos;
+
+    // Columna Esperando
+    const colEsp = document.getElementById('dash-col-esperando');
+    if (data.esperando.length === 0) {
+        colEsp.innerHTML = '<div class="text-center text-muted py-4 small">No hay pacientes esperando</div>';
+    } else {
+        let html = '';
+        data.esperando.forEach(p => {
+            const nivelClass = p.nivel_urgencia === 'ROJO' ? 'border-danger' : p.nivel_urgencia === 'AMARILLO' ? 'border-warning' : 'border-success';
+            const badgeBg = p.nivel_urgencia === 'ROJO' ? 'bg-danger' : p.nivel_urgencia === 'AMARILLO' ? 'bg-warning text-dark' : 'bg-success';
+            html += `
+                <div class="card mb-2 shadow-sm border-start border-4 ${nivelClass}">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <div>
+                                <strong class="small d-block">${p.nombre_completo}</strong>
+                                <small class="text-muted">${p.dni || 'Sin DNI'} | ${p.edad ? p.edad + 'a' : ''}</small>
+                            </div>
+                            <span class="badge ${badgeBg} small">${p.nivel_urgencia}</span>
+                        </div>
+                        <div class="small text-muted mb-1">${p.motivo_consulta || ''}</div>
+                        <div class="d-flex justify-content-between align-items-center pt-1 border-top">
+                            <small class="text-muted"><i class="bi bi-clock"></i> ${p.tiempo_espera}</small>
+                            <button class="btn btn-sm btn-warning py-0 px-2" onclick="iniciarAtencionDashboard(${p.id})">
+                                <i class="bi bi-play-fill"></i> Atender
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        colEsp.innerHTML = html;
+    }
+
+    // Columna Atención
+    const colAtn = document.getElementById('dash-col-atencion');
+    if (data.en_atencion.length === 0) {
+        colAtn.innerHTML = '<div class="text-center text-muted py-4 small">Sin pacientes en atención</div>';
+    } else {
+        let html = '';
+        data.en_atencion.forEach(p => {
+            html += `
+                <div class="card mb-2 shadow-sm border-start border-4 border-warning">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <strong class="small">${p.nombre_completo}</strong>
+                            <span class="badge bg-warning text-dark small">${p.nivel_urgencia}</span>
+                        </div>
+                        <small class="text-muted d-block mb-1">👩‍⚕️ ${p.profesional_atencion}</small>
+                        <div class="d-flex gap-1 justify-content-end pt-1 border-top">
+                            <button class="btn btn-sm btn-primary py-0 px-2" onclick="marcarDestinoDashboard(${p.id}, 'PASE_A_SALA')" title="Pase a Sala"><i class="bi bi-hospital"></i></button>
+                            <button class="btn btn-sm btn-success py-0 px-2" onclick="marcarDestinoDashboard(${p.id}, 'ALTA')" title="Alta"><i class="bi bi-check-circle"></i></button>
+                            <button class="btn btn-sm btn-danger py-0 px-2" onclick="marcarDestinoDashboard(${p.id}, 'PASE_A_UTI')" title="UTI"><i class="bi bi-exclamation-triangle"></i></button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+        colAtn.innerHTML = html;
+    }
+
+    // Columna Egresos
+    const colEgr = document.getElementById('dash-col-egresos');
+    if (data.atendidos_hoy.length === 0) {
+        colEgr.innerHTML = '<div class="text-center text-muted py-4 small">Sin egresos hoy</div>';
+    } else {
+        let html = '';
+        data.atendidos_hoy.forEach(p => {
+            html += `
+                <div class="card mb-1 shadow-sm border-0">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="small d-block">${p.nombre_completo}</strong>
+                            <small class="text-muted">${p.hora_atencion ? p.hora_atencion + ' • ' : ''}${p.profesional_atencion}</small>
+                        </div>
+                        <span class="badge bg-${p.destino_color} small">${p.destino_texto}</span>
+                    </div>
+                </div>`;
+        });
+        colEgr.innerHTML = html;
+    }
+}
+
+function iniciarAtencionDashboard(pacienteId) {
+    fetch(`/triage/paciente/${pacienteId}/iniciar-atencion/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            cargarKanbanDashboard();
+            if (typeof cargarPacientes === 'function') cargarPacientes();
+        }
+    });
+}
+
+function marcarDestinoDashboard(pacienteId, destino) {
+    fetch(`/triage/paciente/${pacienteId}/atendido/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ destino: destino })
+    })
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            cargarKanbanDashboard();
+            if (typeof cargarPacientes === 'function') cargarPacientes();
+            if (typeof actualizarEstadisticasDashboard === 'function') actualizarEstadisticasDashboard();
+        }
+    });
+}
 
 // 🧮 CALCULADORA NEWS INTEGRADA EN DASHBOARD
 console.log('🧮 Inicializando calculadora NEWS en Dashboard...');
@@ -565,11 +801,18 @@ const calculadoraNEWSDashboard = {
             clasificacion = 'ROJO';
             colorClass = 'bg-danger';
             tiempoMax = 'INMEDIATO';
+            if (totalSeleccionados === 6 && window.soundAlertManager && !this._alertedRed) {
+                this._alertedRed = true;
+                window.soundAlertManager.sonarAlarmaCodigoRojo();
+                window.soundAlertManager.mostrarBannerAlarma(1, false);
+            }
         } else if (puntajeTotal >= 5) {
+            this._alertedRed = false;
             clasificacion = 'AMARILLO';
             colorClass = 'bg-warning text-dark';
             tiempoMax = '30 minutos';
         } else {
+            this._alertedRed = false;
             clasificacion = 'VERDE';
             colorClass = 'bg-success';
             tiempoMax = '60 minutos';

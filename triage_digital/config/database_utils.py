@@ -38,14 +38,29 @@ def check_internet_connection(timeout=2, use_cache=True):
             return _connection_cache['is_online']
     
     # Primero verificar conectividad básica de red
+    db_host = os.environ.get('DB_HOST', '')
+    db_port = int(os.environ.get('DB_PORT', '5432'))
+    
+    # Si no hay configuración de DB, asumir offline
+    if not db_host:
+        if use_cache:
+            _connection_cache['last_check'] = time.time()
+            _connection_cache['is_online'] = False
+        return False
+    
+    db_name = os.environ.get('DB_NAME', '')
+    db_user = os.environ.get('DB_USER', '')
+    db_password = os.environ.get('DB_PASSWORD', '')
+    db_sslmode = os.environ.get('DB_SSLMODE', 'require')
+
     try:
         # Test rápido de DNS y conectividad
         socket.setdefaulttimeout(timeout)
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect(
-            ('dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com', 5432)
+            (db_host, db_port)
         )
     except (socket.timeout, socket.error, OSError) as e:
-        print(f"⚠️  Sin conexión de red: {type(e).__name__}")
+        print(f"⚠️  Sin conexión de red a {db_host}:{db_port}: {type(e).__name__}")
         _connection_cache['last_check'] = time.time()
         _connection_cache['is_online'] = False
         return False
@@ -56,12 +71,12 @@ def check_internet_connection(timeout=2, use_cache=True):
         
         # Intentar una conexión real a PostgreSQL
         conn = psycopg2.connect(
-            dbname='triage_digital',
-            user='triage_digital_user',
-            password='hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
-            host='dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
-            port='5432',
-            sslmode='require',
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            host=db_host,
+            port=db_port,
+            sslmode=db_sslmode,
             connect_timeout=timeout
         )
         conn.close()
@@ -87,22 +102,35 @@ def get_database_config():
     
     if has_internet:
         print("🌐 Modo ONLINE - Usando PostgreSQL en Render")
-        return {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'triage_digital',
-                'USER': 'triage_digital_user',
-                'PASSWORD': 'hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
-                'HOST': 'dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
-                'PORT': '5432',
-                'OPTIONS': {
-                    'sslmode': 'require',
-                },
-                'CONN_MAX_AGE': 600,
-                'CONN_HEALTH_CHECKS': True,
+        
+        # Validar que todas las credenciales estén presentes
+        required_vars = ['DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST']
+        missing_vars = [var for var in required_vars if not os.environ.get(var)]
+        
+        if missing_vars:
+            print(f"⚠️ Faltan variables de entorno: {', '.join(missing_vars)}")
+            print("💾 Cayendo a modo OFFLINE - Usando SQLite local")
+            has_internet = False
+        else:
+            return {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': os.environ.get('DB_NAME'),
+                    'USER': os.environ.get('DB_USER'),
+                    'PASSWORD': os.environ.get('DB_PASSWORD'),
+                    'HOST': os.environ.get('DB_HOST'),
+                    'PORT': os.environ.get('DB_PORT', '5432'),
+                    'OPTIONS': {
+                        'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+                        'connect_timeout': 10,
+                    },
+                    'CONN_MAX_AGE': 600,
+                    'CONN_HEALTH_CHECKS': True,
+                }
             }
-        }
-    else:
+    
+    # Modo offline si no hay conexión
+    if not has_internet:
         print("💾 Modo OFFLINE - Usando SQLite local")
         
         # Detectar si estamos ejecutando desde PyInstaller

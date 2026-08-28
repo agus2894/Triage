@@ -18,7 +18,15 @@ class PacienteManager(models.Manager):
         return self.filter(
             activo=True,
             estado_atencion='ESPERANDO'
-        ).prefetch_related('signos_vitales').order_by('-fecha_ingreso')
+        ).select_related(
+            'profesional_atencion__user'
+        ).prefetch_related(
+            'signos_vitales__profesional__user'
+        ).only(
+            'id', 'nombre', 'apellido', 'dni', 'edad', 'motivo_consulta',
+            'fecha_ingreso', 'estado_atencion', 'fecha_atencion', 'activo',
+            'profesional_atencion__user__first_name', 'profesional_atencion__user__last_name'
+        ).order_by('-fecha_ingreso')
     
     def criticos_sin_atender(self):
         """Pacientes críticos que necesitan atención inmediata."""
@@ -26,7 +34,11 @@ class PacienteManager(models.Manager):
             activo=True,
             estado_atencion__in=['ESPERANDO', 'EN_ATENCION'],
             signos_vitales__nivel_urgencia__in=['ROJO', 'AMARILLO']
-        ).select_related().prefetch_related('signos_vitales').distinct()
+        ).select_related(
+            'profesional_atencion__user'
+        ).prefetch_related(
+            'signos_vitales__profesional__user'
+        ).distinct()
     
     def estadisticas_diarias(self, fecha=None):
         """Estadísticas optimizadas para un día específico."""
@@ -233,38 +245,83 @@ class Paciente(models.Model):
     
     def es_critico(self):
         """Verifica si tiene triage crítico (ROJO/AMARILLO) - OPTIMIZADO."""
-        # Usar select_related para evitar consulta adicional
-        if hasattr(self, '_ultimo_triage_cache'):
+        # Usar prefetch si está disponible para evitar consulta adicional
+        if hasattr(self, '_prefetched_objects_cache') and 'signos_vitales' in self._prefetched_objects_cache:
+            signos = list(self.signos_vitales.all())
+            if signos:
+                ultimo_triage = signos[0]
+            else:
+                return False
+        elif hasattr(self, '_ultimo_triage_cache'):
             ultimo_triage = self._ultimo_triage_cache
         else:
-            ultimo_triage = self.signos_vitales.select_related().first()
+            ultimo_triage = self.signos_vitales.only('nivel_urgencia').first()
             self._ultimo_triage_cache = ultimo_triage
             
         if ultimo_triage and ultimo_triage.nivel_urgencia:
             return ultimo_triage.nivel_urgencia in ['ROJO', 'AMARILLO']
         return False
     
+    def obtener_ultimo_triage(self):
+        """
+        Obtiene el último triage del paciente de forma optimizada.
+        Usa cache si está disponible para evitar queries repetidas.
+        
+        Returns:
+            SignosVitales o None
+        """
+        # Usar prefetch si está disponible
+        if hasattr(self, '_prefetched_objects_cache') and 'signos_vitales' in self._prefetched_objects_cache:
+            signos = list(self.signos_vitales.all())
+            return signos[0] if signos else None
+        
+        # Usar cache interno si existe
+        if hasattr(self, '_ultimo_triage_cache'):
+            return self._ultimo_triage_cache
+        
+        # Query optimizada con only()
+        ultimo_triage = self.signos_vitales.select_related('profesional__user').only(
+            'id', 'nivel_urgencia', 'news_score', 'fecha_hora',
+            'frecuencia_respiratoria', 'saturacion_oxigeno', 
+            'tension_sistolica', 'frecuencia_cardiaca',
+            'nivel_conciencia', 'temperatura',
+            'profesional__user__first_name', 'profesional__user__last_name'
+        ).first()
+        
+        self._ultimo_triage_cache = ultimo_triage
+        return ultimo_triage
+    
     def marcar_atendido(self, destino='ALTA', profesional=None):
-        """Marca el paciente con destino específico, profesional y actualiza fecha - OPTIMIZADO."""
-        # Validar destino
-        destinos_validos = ['PASE_A_SALA', 'ALTA', 'PASE_A_UTI']
+        """
+        Marca el paciente con destino o estado específico.
+        Usa update() para optimizar la escritura en BD.
+        
+        Args:
+            destino: Estado del paciente ('ALTA', 'PASE_A_SALA', etc.)
+            profesional: Profesional que realiza la acción
+        """
+        destinos_validos = ['ESPERANDO', 'EN_ATENCION', 'PASE_A_SALA', 'ALTA', 'PASE_A_UTI', 'DERIVADO']
         if destino not in destinos_validos:
-            destino = 'ALTA'  # Default seguro
+            destino = 'ALTA'
             
-        # Usar update() para ser más eficiente que save()
         update_data = {
             'estado_atencion': destino,
-            'fecha_atencion': timezone.now()
         }
         
+        ahora = timezone.now()
+        if destino != 'ESPERANDO':
+            update_data['fecha_atencion'] = ahora
+        else:
+            update_data['fecha_atencion'] = None
+            
         if profesional:
             update_data['profesional_atencion'] = profesional
             
+        # Usar update() para una sola query SQL en lugar de save()
         Paciente.objects.filter(id=self.id).update(**update_data)
         
-        # Actualizar instancia actual
+        # Actualizar instancia actual para mantener coherencia
         self.estado_atencion = destino
-        self.fecha_atencion = timezone.now()
+        self.fecha_atencion = update_data.get('fecha_atencion')
         if profesional:
             self.profesional_atencion = profesional
-        self.fecha_atencion = timezone.now()

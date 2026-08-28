@@ -14,34 +14,6 @@ import threading
 from pathlib import Path
 import socket
 
-def main():
-    print("🏥 Iniciando Triage Digital...")
-    print("============================")
-    
-    # Configurar sys.argv PRIMERO
-    if not sys.argv or len(sys.argv) == 0:
-        sys.argv = ['TriageDigitalHybrid']
-    
-    # Configurar Django
-    print("📋 Configurando sistema...")
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-    
-    try:
-        import django
-        from django.core.management import execute_from_command_line, call_command
-        django.setup()
-        print("✅ Sistema configurado")
-        
-    except Exception as e:
-        print(f"❌ Error de configuración: {e}")
-        input("Presiona Enter para salir...")
-        return
-
-    # Verificar modo de operación y configurar BD si es necesario
-    _setup_database()
-    
-    # Arrancar servidor
-    print("🚀 Iniciando servidor web...")
 
 def _setup_database():
     """Configura la base de datos según el modo (online/offline)"""

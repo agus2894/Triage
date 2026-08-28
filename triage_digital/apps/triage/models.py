@@ -207,6 +207,10 @@ class SignosVitales(models.Model):
             models.Index(fields=['fecha_hora', 'nivel_urgencia'], name='idx_fecha_nivel'),
             # Índice para casos críticos
             models.Index(fields=['nivel_urgencia', 'paciente'], name='idx_triage_critico'),
+            # Índice compuesto para consultas del dashboard (paciente activo + estado)
+            models.Index(fields=['paciente', 'nivel_urgencia', '-fecha_hora'], name='idx_pac_nivel_fecha'),
+            # Índice para reportes por profesional y fecha
+            models.Index(fields=['profesional', 'fecha_hora', 'nivel_urgencia'], name='idx_prof_fecha_nivel'),
         ]
         
     def __str__(self):
@@ -224,11 +228,15 @@ class SignosVitales(models.Model):
         Returns:
             dict: Resultado del cálculo NEWS
         """
-        # Cache del cálculo para evitar recalcular si no cambió
-        cache_key = f"news_{self.id}_{hash((self.frecuencia_respiratoria, self.saturacion_oxigeno, self.tension_sistolica, self.frecuencia_cardiaca, self.nivel_conciencia, float(self.temperatura)))}"
-        
-        if hasattr(self, '_news_cache') and self._news_cache.get('key') == cache_key:
-            return self._news_cache['result']
+        # Si ya está guardado en BD, no recalcular
+        if self.pk and self.news_score is not None and self.nivel_urgencia:
+            return {
+                'puntaje_total': self.news_score,
+                'clasificacion': self.nivel_urgencia,
+                'nivel_urgencia': self.nivel_urgencia,
+                'tiempo_atencion_maximo': self.tiempo_atencion_max,
+                'codigo_color': self.color_hex,
+            }
         
         from .utils import CalculadoraNEWS  # Import lazy para evitar circular imports
         
@@ -241,12 +249,7 @@ class SignosVitales(models.Model):
             'temperatura': self.temperatura,
         }
         
-        result = CalculadoraNEWS.calcular_puntaje_total(datos_signos_vitales)
-        
-        # Cache del resultado
-        self._news_cache = {'key': cache_key, 'result': result}
-        
-        return result
+        return CalculadoraNEWS.calcular_puntaje_total(datos_signos_vitales)
     
     def save(self, *args, **kwargs):
         """

@@ -7,12 +7,36 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY: Cambiar en producción usando variables de entorno
+def _load_env_file():
+    """Carga variables desde el archivo .env si existe (raíz o subdirectorio)."""
+    candidates = [
+        BASE_DIR / '.env',
+        BASE_DIR.parent / '.env'
+    ]
+    for env_path in candidates:
+        if env_path.exists():
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k not in os.environ:
+                                os.environ[k] = v
+            except Exception:
+                pass
+            break
+
+_load_env_file()
+
+# SECURITY: Variables de entorno con fallbacks seguros
 SECRET_KEY = os.environ.get('SECRET_KEY', 'triage-digital-2025-key-CHANGE-IN-PRODUCTION')
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Hosts permitidos - Configurado para red hospitalaria
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,192.168.*,10.*,172.*').split(',')
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,192.168.*,10.*,172.*').split(',') if h.strip()]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -67,28 +91,19 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database - Configuración Híbrida Online/Offline
-# Detecta automáticamente si hay conexión a internet y usa:
-# - PostgreSQL en Render (modo colaborativo online) 
-# - SQLite local (modo presentación offline)
-
-# Importar utilidades de base de datos
 try:
     from .database_utils import get_database_config
     DATABASES = get_database_config()
 except ImportError:
-    # Fallback a configuración fija si hay problemas
-    print("⚠️  Usando configuración de BD fija (fallback)")
+    # Fallback a SQLite local si no está disponible database_utils
+    print("⚠️  Usando configuración de SQLite local (fallback)")
+    db_dir = BASE_DIR / 'db'
+    db_dir.mkdir(exist_ok=True)
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'triage_digital',
-            'USER': 'triage_digital_user',
-            'PASSWORD': 'hxuR3HFPIytdMIwQbGGVZ7BIo72H3Yr2',
-            'HOST': 'dpg-d4krad9r0fns738c3nd0-a.oregon-postgres.render.com',
-            'PORT': '5432',
-            'OPTIONS': {
-                'sslmode': 'require',
-            },
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': str(db_dir / 'triage_offline.sqlite3'),
+            'OPTIONS': {'timeout': 20},
         }
     }
 
