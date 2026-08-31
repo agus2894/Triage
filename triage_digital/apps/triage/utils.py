@@ -126,17 +126,22 @@ class CalculadoraNEWS:
             return 3
     
     @staticmethod
-    def calcular_puntaje_temperatura(temperatura: Decimal) -> int:
+    def calcular_puntaje_temperatura(temperatura) -> int:
         """
         Calcula el puntaje para temperatura corporal.
         
         Args:
-            temperatura: Temperatura en grados Celsius
+            temperatura: Temperatura en grados Celsius (Decimal, float o str)
             
         Returns:
             Puntaje NEWS (0-3)
         """
-        temp = float(temperatura)
+        if temperatura is None:
+            return 0
+        try:
+            temp = float(temperatura)
+        except (ValueError, TypeError):
+            return 0
         
         if temp <= 35.0:
             return 3

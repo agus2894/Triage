@@ -46,12 +46,13 @@ def should_optimize():
 
 
 def auto_optimize_background():
-    """Optimización automática en background thread."""
+    """Optimización automática en background thread respetando el motor de BD."""
     try:
-        with connection.cursor() as cursor:
-            # Optimizaciones rápidas y no bloqueantes
-            cursor.execute('PRAGMA optimize;')
-            cursor.execute('PRAGMA wal_checkpoint(PASSIVE);')
+        if connection.vendor == 'sqlite':
+            with connection.cursor() as cursor:
+                # Optimizaciones rápidas y no bloqueantes solo para SQLite
+                cursor.execute('PRAGMA optimize;')
+                cursor.execute('PRAGMA wal_checkpoint(PASSIVE);')
             
         # Resetear contador y marcar última optimización
         cache.set(OPERATIONS_COUNTER, 0, timeout=3600)
@@ -88,8 +89,6 @@ def optimize_after_triage(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Paciente)
 def cache_invalidation_patient(sender, instance, **kwargs):
     """Invalidar cache automáticamente cuando cambia un paciente."""
-    # Invalidar caches específicos para que el dashboard se actualice
-    # Usar delete_many para optimizar múltiples invalidaciones
     cache_keys = [
         'dashboard_stats',
         'patients_waiting',
@@ -104,7 +103,6 @@ def cleanup_after_patient_delete(sender, instance, **kwargs):
     """Limpieza automática después de eliminar paciente."""
     increment_operations()
     
-    # Invalidar caches relacionados usando delete_many
     cache_keys = [
         'dashboard_stats',
         'patients_waiting',
@@ -114,48 +112,40 @@ def cleanup_after_patient_delete(sender, instance, **kwargs):
     cache.delete_many(cache_keys)
 
 
-# Signal para limpieza automática de datos antiguos
+# Mantenimiento automático de sesiones y limpieza de temporales
 def auto_cleanup_old_data():
-    """Limpieza automática de datos antiguos cada semana."""
+    """Limpieza automática de sesiones vencidas y mantenimiento periódico."""
     try:
         # Solo en horarios de bajo uso (2-6 AM)
         current_hour = timezone.now().hour
         if not (2 <= current_hour <= 6):
             return
         
-        # Verificar si ya se hizo limpieza esta semana
+        # Verificar si ya se hizo mantenimiento esta semana
         last_cleanup = cache.get('last_auto_cleanup')
         if last_cleanup:
             days_since = (timezone.now().date() - last_cleanup).days
             if days_since < 7:
                 return
         
-        # Limpieza automática de datos >6 meses
-        fecha_limite = timezone.now() - timedelta(days=180)
+        # Limpieza de sesiones expiradas en base de datos
+        from django.contrib.sessions.models import Session
+        expired_sessions = Session.objects.filter(expire_date__lt=timezone.now())
+        count_expired = expired_sessions.count()
+        if count_expired > 0:
+            expired_sessions.delete()
+            logger.info(f"Auto-limpieza: eliminadas {count_expired} sesiones expiradas")
         
-        # Eliminar pacientes atendidos muy antiguos (batch pequeño)
-        old_patients = Paciente.objects.filter(
-            estado_atencion='ATENDIDO',
-            fecha_atencion__lt=fecha_limite
-        )[:50]  # Solo 50 por vez para no saturar
-        
-        deleted_count = 0
-        for patient in old_patients:
-            patient.delete()
-            deleted_count += 1
-        
-        if deleted_count > 0:
-            logger.info(f"Auto-limpieza: eliminados {deleted_count} pacientes antiguos")
-            
-            # Optimización post-limpieza
+        # Optimización post-limpieza para SQLite
+        if connection.vendor == 'sqlite':
             with connection.cursor() as cursor:
                 cursor.execute('PRAGMA incremental_vacuum;')
         
-        # Marcar última limpieza
+        # Marcar último mantenimiento
         cache.set('last_auto_cleanup', timezone.now().date(), timeout=86400*7)
         
     except Exception as e:
-        logger.warning(f"Error en auto-limpieza: {e}")
+        logger.warning(f"Error en auto-mantenimiento: {e}")
 
 
 # Programar limpieza automática cada día

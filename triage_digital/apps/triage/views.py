@@ -4,7 +4,7 @@ from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Q
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.core.cache import cache
 from datetime import timedelta
@@ -100,59 +100,58 @@ def _construir_datos_paciente(paciente, incluir_signos=True, incluir_profesional
     return datos
 
 
+def _safe_int(value, default=0):
+    """Convierte valor a int de forma segura y optimizada."""
+    if value in (None, '', 'undefined', 'null'):
+        return default
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_float(value, default=0.0):
+    """Convierte valor a float de forma segura y optimizada."""
+    if value in (None, '', 'undefined', 'null'):
+        return default
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_str(value, default=''):
+    """Convierte valor a string de forma segura y optimizada."""
+    if value in (None, 'undefined', 'null'):
+        return default
+    return str(value).strip()
+
+
 def _crear_signos_vitales(request, paciente, profesional):
     """
     Helper optimizado para crear signos vitales desde request POST.
-    Valida y convierte valores de forma segura.
+    Valida y convierte valores de forma segura sin closures repetitivos.
     """
-    def safe_int(value, default=0):
-        """Convierte valor a int de forma segura."""
-        if value in (None, '', 'undefined', 'null'):
-            return default
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            return default
-    
-    def safe_float(value, default=0.0):
-        """Convierte valor a float de forma segura."""
-        if value in (None, '', 'undefined', 'null'):
-            return default
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return default
-    
-    def safe_str(value, default=''):
-        """Convierte valor a string de forma segura."""
-        if value in (None, 'undefined', 'null'):
-            return default
-        return str(value)
-    
-    # Extraer y validar valores del POST en una sola pasada
     post_data = {
-        'frecuencia_respiratoria': safe_int(request.POST.get('frecuencia_respiratoria')),
-        'saturacion_oxigeno': safe_int(request.POST.get('saturacion_oxigeno')),
-        'tension_sistolica': safe_int(request.POST.get('tension_sistolica')),
-        'frecuencia_cardiaca': safe_int(request.POST.get('frecuencia_cardiaca')),
-        'nivel_conciencia': safe_str(request.POST.get('nivel_conciencia')),
-        'temperatura': safe_float(request.POST.get('temperatura')),
+        'frecuencia_respiratoria': _safe_int(request.POST.get('frecuencia_respiratoria')),
+        'saturacion_oxigeno': _safe_int(request.POST.get('saturacion_oxigeno')),
+        'tension_sistolica': _safe_int(request.POST.get('tension_sistolica')),
+        'frecuencia_cardiaca': _safe_int(request.POST.get('frecuencia_cardiaca')),
+        'nivel_conciencia': _safe_str(request.POST.get('nivel_conciencia')),
+        'temperatura': _safe_float(request.POST.get('temperatura')),
     }
     
-    # Crear signos vitales con datos validados
-    signos = SignosVitales.objects.create(
+    return SignosVitales.objects.create(
         paciente=paciente,
         profesional=profesional,
         **post_data
     )
-    
-    return signos
 
 
 def _obtener_profesional(request):
     try:
         return request.user.profesional
-    except Profesional.DoesNotExist:
+    except (Profesional.DoesNotExist, AttributeError):
         return None
 
 
@@ -161,30 +160,28 @@ def _obtener_profesional(request):
 def dashboard_principal(request):
     if request.method == 'POST':
         try:
-            # Obtener profesional
             profesional = _obtener_profesional(request)
             if not profesional:
                 messages.error(request, 'Usuario no tiene perfil de profesional asociado.')
                 return redirect('triage:dashboard')
             
-            # 1. Crear paciente con datos del formulario
             nombre = request.POST.get('nombre', '').strip() or None
             apellido = request.POST.get('apellido', '').strip() or None
             dni = request.POST.get('dni', '').strip() or None
-            edad = request.POST.get('edad')
+            edad_raw = request.POST.get('edad', '').strip()
+            edad = int(edad_raw) if (edad_raw and edad_raw.isdigit()) else None
+            motivo = request.POST.get('motivo_consulta', '').strip()
             
-            paciente = Paciente.objects.create(
-                nombre=nombre,
-                apellido=apellido,
-                dni=dni,
-                edad=int(edad) if edad else None,
-                motivo_consulta=request.POST.get('motivo_consulta', '').strip()
-            )
+            with transaction.atomic():
+                paciente = Paciente.objects.create(
+                    nombre=nombre,
+                    apellido=apellido,
+                    dni=dni,
+                    edad=edad,
+                    motivo_consulta=motivo
+                )
+                signos = _crear_signos_vitales(request, paciente, profesional)
             
-            # 2. Crear signos vitales usando helper
-            signos = _crear_signos_vitales(request, paciente, profesional)
-            
-            # 3. Mensaje de éxito
             messages.success(
                 request, 
                 f'✅ Triage completado para {paciente.nombre_completo}: '
@@ -192,9 +189,8 @@ def dashboard_principal(request):
                 f'Tiempo máximo: {signos.tiempo_atencion_max} minutos'
             )
             
-            # 4. Limpiar cache para actualización inmediata
-            cache.delete('dashboard_stats')
-            cache.delete('patients_waiting')
+            # Limpiar caches para actualización inmediata
+            cache.delete_many(['dashboard_stats', 'patients_waiting', 'kanban_data'])
             
             return redirect('triage:dashboard')
             
@@ -202,17 +198,14 @@ def dashboard_principal(request):
             messages.error(request, f'❌ Error al completar triage: {str(e)}')
             return redirect('triage:dashboard')
     
-    # 🔍 LÓGICA GET ORIGINAL (mostrar dashboard)
-    # Intentar obtener del cache primero
+    # GET: Mostrar dashboard optimizado
     cache_key = 'dashboard_stats'
     cached_data = cache.get(cache_key)
     
     if cached_data is None:
-        # Cache miss - calcular datos
         hace_24h = timezone.now() - timedelta(hours=24)
         
-        # 🔥 CONSULTAS OPTIMIZADAS - Usando select_related y prefetch_related
-        # Una sola consulta con aggregate para estadísticas
+        # Consultas agregadas en una sola pasada
         estadisticas = SignosVitales.objects.filter(
             fecha_hora__gte=hace_24h,
             nivel_urgencia__isnull=False,
@@ -225,7 +218,6 @@ def dashboard_principal(request):
             verdes=Count('id', filter=Q(nivel_urgencia='VERDE'))
         )
         
-        # Casos críticos - OPTIMIZADO con select_related - Limitar a 10
         casos_criticos = list(SignosVitales.objects.filter(
             nivel_urgencia__in=['ROJO', 'AMARILLO'],
             paciente__activo=True,
@@ -239,7 +231,6 @@ def dashboard_principal(request):
             'profesional__user__first_name', 'profesional__user__last_name'
         ).order_by('-fecha_hora')[:10])
         
-        # Pacientes pendientes (OPTIMIZADO con manager personalizado) - Limitar a 5
         pacientes_recientes = list(Paciente.objects.filter(
             activo=True,
             estado_atencion='ESPERANDO'
@@ -258,15 +249,13 @@ def dashboard_principal(request):
             'casos_criticos': casos_criticos,
             'pacientes_recientes': pacientes_recientes,
         }
-        
-        # Cache por 2 minutos (balance entre velocidad y actualización)
         cache.set(cache_key, cached_data, timeout=120)
     
-    # 🔒 Agregar información del profesional (no cacheada)
-    profesional = _obtener_profesional(request)
-    cached_data['profesional'] = profesional
+    # Copia para evitar mutar el cache compartido en memoria
+    context = dict(cached_data)
+    context['profesional'] = _obtener_profesional(request)
     
-    return render(request, 'triage/dashboard.html', cached_data)
+    return render(request, 'triage/dashboard.html', context)
 
 
 @login_required
